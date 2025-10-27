@@ -1,0 +1,49 @@
+description = "Creates a feature branch and specification file based on a feature ID and description."
+
+prompt = """
+---
+description: Creates a feature branch and specification file based on a feature ID and description.
+---
+
+## User Input
+
+```text
+$ARGUMENTS
+```
+
+## Command Usage
+
+The user must provide arguments in the format: `/specify aa-XXX [description]`.
+
+- `aa-XXX`: The required feature identifier, where `aa` is the prefix and `XXX` is a number.
+- `[description]`: A required natural language description of the feature.
+
+If the format is incorrect, you **MUST** inform the user and provide the correct usage.
+
+## Execution Flow
+
+1.  **Parse and Validate User Input**:
+    - Extract the feature identifier (e.g., `aa-123`) and the description from the user's arguments.
+    - **Crucially, validate that the input strictly follows the `aa-XXX [description]` format.** If not, stop and instruct the user on the correct format. Do not proceed.
+
+2.  **Execute the Creation Script**:
+    - If the input is valid, run the `create-new-feature.sh` script.
+    - The script handles branch and file creation based on the new conventions.
+    - Pass the arguments directly to the script.
+
+    Example command to execute:
+    ```bash
+    .specify/scripts/bash/create-new-feature.sh --json $ARGUMENTS
+    ```
+
+3.  **Process Script Output**:
+    - The script will output a JSON object containing `BRANCH_NAME` and `SPEC_FILE`.
+    - Use the `SPEC_FILE` path to load the newly created specification template.
+
+4.  **Generate Specification**:
+    - Analyze the user's feature description.
+    - Populate the `spec.md` file according to the sections defined in the template (`.specify/templates/spec-template.md`).
+    - Make informed guesses for any unclear aspects, but mark them with `[NEEDS CLARIFICATION: specific question]` if the ambiguity significantly impacts the feature.
+
+**IMPORTANT**: Your primary responsibility is to validate the user's input format *before* executing any script. Do not attempt to guess or auto-correct the feature ID.
+"""
