@@ -23,20 +23,20 @@ The following key-value pairs define the new structure. All scripts and template
 
 ### 2.1. Branching Strategy
 
-- **Branch Format:** New feature branches must follow the pattern: `[branch-folder]/[prefix]-XXX`.
-  - *Example:* `features/aa-123`
+- **Branch Format:** New feature branches must follow the pattern: `[branch-folder]/[prefix]-###`.
+  - *Example:* `features/aa-123` (no description and no --short-name in branch name)
 - **Base Branch:** All new feature branches must be created from `[main-branch]` (`master`).
 
 ### 2.2. Specification Directory Structure
 
-- **Spec Folder:** When a new spec is created, its directory must be generated at: `[folder-specs]/[prefix]-XXX`.
-  - *Example:* `.specify/features/aa-123`
+- **Spec Folder:** When a new spec is created, its directory must be generated at: `[folder-specs]/[prefix]-###`.
+  - *Example:* `.specify/features/aa-123` (no description and no --short-name in folder name)
 
 ### 2.3. Command Usage & Validation
 
-- **Primary Command:** The main command for creating a new spec must be: `/speckit.specify [prefix]-XXX [description]`.
+- **Primary Command:** The main command for creating a new spec must be: `/speckit.specify [prefix]-### [description]`.
   - *Example:* `/speckit.specify aa-123 "Implement new login flow"`
-- **Input Validation:** The script for `/speckit.specify` must validate that the first argument matches the `[prefix]-XXX` format. If the argument is missing or invalid, the script should exit with an informative error message for the user.
+- **Input Validation:** The script for `/speckit.specify` must validate that the first argument matches the `[prefix]-###` format. If the argument is missing or invalid, the script should exit with an informative error message for the user.
 - **Consistency:** All other `/speckit.*` commands must be updated to be consistent with this new naming and directory convention.
 
 ---
@@ -47,14 +47,14 @@ The following files must be updated to implement the changes described above.
 
 ### 3.1. `.specify` Scripts & Templates
 
--   **Scripts:** `/mnt/rz1_main_pool/VinhLTT_stored/0_personal/awesome-agents/.specify/scripts/bash/`
+-   **Scripts:** `.specify/scripts/bash/`
     -   [ ] `check-prerequisites.sh`: Update any checks related to branch or directory naming.
     -   [ ] `common.sh`: Update helper functions, particularly those that resolve branch names or spec paths.
-    -   [ ] `create-new-feature.sh`: This is the core file. Modify it to handle the new branch format (`[branch-folder]/[prefix]-XXX`), base branch (`[main-branch]`), and spec directory creation (`[folder-specs]/[prefix]-XXX`). Implement the argument validation here.
+    -   [ ] `create-new-feature.sh`: This is the core file. Modify it to handle the new branch format (`[branch-folder]/[prefix]-###`), base branch (`[main-branch]`), and spec directory creation (`[folder-specs]/[prefix]-###`). Implement the argument validation here.
     -   [ ] `setup-plan.sh`: Ensure this script correctly locates the spec files in the new directory structure.
     -   [ ] `update-agent-context.sh`: Update to reflect the new file paths and command structures.
 
--   **Templates:** `/mnt/rz1_main_pool/VinhLTT_stored/0_personal/awesome-agents/.specify/templates/`
+-   **Templates:** `.specify/templates/`
     -   [ ] `agent-file-template.md`: Update any placeholder text that refers to the old branch/directory format.
     -   [ ] `checklist-template.md`: Update to reflect the new process.
     -   [ ] `plan-template.md`: Ensure paths and commands mentioned in the template are correct.
@@ -63,7 +63,7 @@ The following files must be updated to implement the changes described above.
 
 ### 3.2. `.claude` Agent Commands
 
--   **Commands:** `/mnt/rz1_main_pool/VinhLTT_stored/0_personal/awesome-agents/.claude/commands/`
+-   **Commands:** `.claude/commands/`
     -   [ ] `speckit.analyze.md`: Update command usage and examples.
     -   [ ] `speckit.checklist.md`: Update command usage and examples.
     -   [ ] `speckit.clarify.md`: Update command usage and examples.
@@ -75,7 +75,7 @@ The following files must be updated to implement the changes described above.
 
 ### 3.3. `.gemini` Agent Commands
 
--   **Commands:** `/mnt/rz1_main_pool/VinhLTT_stored/0_personal/awesome-agents/.gemini/commands/`
+-   **Commands:** `.gemini/commands/`
     -   [ ] `speckit.analyze.toml`: Update command usage and examples.
     -   [ ] `speckit.checklist.toml`: Update command usage and examples.
     -   [ ] `speckit.clarify.toml`: Update command usage and examples.
@@ -87,7 +87,7 @@ The following files must be updated to implement the changes described above.
 
 ### 3.4. `.github` Agent Prompts
 
--   **Prompts:** `/mnt/rz1_main_pool/VinhLTT_stored/0_personal/awesome-agents/.github/prompts/`
+-   **Prompts:** `.github/prompts/`
     -   [ ] `speckit.analyze.prompt.md`: Update command usage and examples.
     -   [ ] `speckit.checklist.prompt.md`: Update command usage and examples.
     -   [ ] `speckit.clarify.prompt.md`: Update command usage and examples.

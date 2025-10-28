@@ -5,7 +5,7 @@ description: "Task list template for feature implementation"
 
 # Tasks: [FEATURE NAME]
 
-**Input**: Design documents from `/specs/[###-feature-name]/`
+**Input**: Design documents from `.specify/features/aa-###/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
 **Tests**: The examples below include test tasks. Tests are OPTIONAL - only include them if explicitly requested in the feature specification.
@@ -150,12 +150,12 @@ Examples of foundational tasks (adjust based on your project):
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] TXXX [P] Documentation updates in docs/
-- [ ] TXXX Code cleanup and refactoring
-- [ ] TXXX Performance optimization across all stories
-- [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/
-- [ ] TXXX Security hardening
-- [ ] TXXX Run quickstart.md validation
+- [ ] T### [P] Documentation updates in docs/
+- [ ] T### Code cleanup and refactoring
+- [ ] T### Performance optimization across all stories
+- [ ] T### [P] Additional unit tests (if requested) in tests/unit/
+- [ ] T### Security hardening
+- [ ] T### Run quickstart.md validation
 
 ---
 

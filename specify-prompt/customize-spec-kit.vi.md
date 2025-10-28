@@ -23,20 +23,20 @@ Các cặp khóa-giá trị sau đây xác định cấu trúc mới. Tất cả
 
 ### 2.1. Chiến lược Phân nhánh
 
-- **Định dạng Nhánh:** Các nhánh tính năng mới phải tuân theo mẫu: `[branch-folder]/[prefix]-XXX`.
-  - *Ví dụ:* `features/aa-123`
+- **Định dạng Nhánh:** Các nhánh tính năng mới phải tuân theo mẫu: `[branch-folder]/[prefix]-###`.
+  - *Ví dụ:* `features/aa-123` (no description and no --short-name in branch name)
 - **Nhánh Cơ sở:** Tất cả các nhánh tính năng mới phải được tạo từ `[main-branch]` (`master`).
 
 ### 2.2. Cấu trúc Thư mục Đặc tả (Specification)
 
-- **Thư mục Spec:** Khi một spec mới được tạo, thư mục của nó phải được tạo tại: `[folder-specs]/[prefix]-XXX`.
-  - *Ví dụ:* `.specify/features/aa-123`
+- **Thư mục Spec:** Khi một spec mới được tạo, thư mục của nó phải được tạo tại: `[folder-specs]/[prefix]-###`.
+  - *Ví dụ:* `.specify/features/aa-123` (no description and no --short-name in folder name)
 
 ### 2.3. Sử dụng Lệnh & Xác thực
 
-- **Lệnh Chính:** Lệnh chính để tạo một spec mới phải là: `/speckit.specify [prefix]-XXX [description]`.
+- **Lệnh Chính:** Lệnh chính để tạo một spec mới phải là: `/speckit.specify [prefix]-### [description]`.
   - *Ví dụ:* `/speckit.specify aa-123 "Triển khai luồng đăng nhập mới"`
-- **Xác thực Đầu vào:** Tập lệnh cho `/speckit.specify` phải xác thực rằng đối số đầu tiên khớp với định dạng `[prefix]-XXX`. Nếu đối số bị thiếu hoặc không hợp lệ, tập lệnh sẽ thoát và hiển thị một thông báo lỗi đầy đủ thông tin cho người dùng.
+- **Xác thực Đầu vào:** Tập lệnh cho `/speckit.specify` phải xác thực rằng đối số đầu tiên khớp với định dạng `[prefix]-###`. Nếu đối số bị thiếu hoặc không hợp lệ, tập lệnh sẽ thoát và hiển thị một thông báo lỗi đầy đủ thông tin cho người dùng.
 - **Tính nhất quán:** Tất cả các lệnh `/speckit.*` khác phải được cập nhật để nhất quán với quy ước đặt tên và thư mục mới này.
 
 ---
@@ -47,14 +47,14 @@ Các tệp sau phải được cập nhật để triển khai các thay đổi 
 
 ### 3.1. `.specify` Scripts & Templates
 
--   **Scripts:** `/mnt/rz1_main_pool/VinhLTT_stored/0_personal/awesome-agents/.specify/scripts/bash/`
+-   **Scripts:** `.specify/scripts/bash/`
     -   [ ] `check-prerequisites.sh`: Cập nhật mọi kiểm tra liên quan đến đặt tên nhánh hoặc thư mục.
     -   [ ] `common.sh`: Cập nhật các hàm trợ giúp, đặc biệt là những hàm giải quyết tên nhánh hoặc đường dẫn spec.
-    -   [ ] `create-new-feature.sh`: Đây là tệp cốt lõi. Sửa đổi nó để xử lý định dạng nhánh mới (`[branch-folder]/[prefix]-XXX`), nhánh cơ sở (`[main-branch]`) và tạo thư mục spec (`[folder-specs]/[prefix]-XXX`). Thực hiện xác thực đối số ở đây.
+    -   [ ] `create-new-feature.sh`: Đây là tệp cốt lõi. Sửa đổi nó để xử lý định dạng nhánh mới (`[branch-folder]/[prefix]-###`), nhánh cơ sở (`[main-branch]`) và tạo thư mục spec (`[folder-specs]/[prefix]-###`). Thực hiện xác thực đối số ở đây.
     -   [ ] `setup-plan.sh`: Đảm bảo tập lệnh này định vị chính xác các tệp spec trong cấu trúc thư mục mới.
     -   [ ] `update-agent-context.sh`: Cập nhật để phản ánh các đường dẫn tệp và cấu trúc lệnh mới.
 
--   **Templates:** `/mnt/rz1_main_pool/VinhLTT_stored/0_personal/awesome-agents/.specify/templates/`
+-   **Templates:** `.specify/templates/`
     -   [ ] `agent-file-template.md`: Cập nhật mọi văn bản giữ chỗ đề cập đến định dạng nhánh/thư mục cũ.
     -   [ ] `checklist-template.md`: Cập nhật để phản ánh quy trình mới.
     -   [ ] `plan-template.md`: Đảm bảo các đường dẫn và lệnh được đề cập trong mẫu là chính xác.
@@ -63,7 +63,7 @@ Các tệp sau phải được cập nhật để triển khai các thay đổi 
 
 ### 3.2. `.claude` Agent Commands
 
--   **Commands:** `/mnt/rz1_main_pool/VinhLTT_stored/0_personal/awesome-agents/.claude/commands/`
+-   **Commands:** `.claude/commands/`
     -   [ ] `speckit.analyze.md`: Cập nhật cách sử dụng lệnh và ví dụ.
     -   [ ] `speckit.checklist.md`: Cập nhật cách sử dụng lệnh và ví dụ.
     -   [ ] `speckit.clarify.md`: Cập nhật cách sử dụng lệnh và ví dụ.
@@ -75,7 +75,7 @@ Các tệp sau phải được cập nhật để triển khai các thay đổi 
 
 ### 3.3. `.gemini` Agent Commands
 
--   **Commands:** `/mnt/rz1_main_pool/VinhLTT_stored/0_personal/awesome-agents/.gemini/commands/`
+-   **Commands:** `.gemini/commands/`
     -   [ ] `speckit.analyze.toml`: Cập nhật cách sử dụng lệnh và ví dụ.
     -   [ ] `speckit.checklist.toml`: Cập nhật cách sử dụng lệnh và ví dụ.
     -   [ ] `speckit.clarify.toml`: Cập nhật cách sử dụng lệnh và ví dụ.
@@ -87,7 +87,7 @@ Các tệp sau phải được cập nhật để triển khai các thay đổi 
 
 ### 3.4. `.github` Agent Prompts
 
--   **Prompts:** `/mnt/rz1_main_pool/VinhLTT_stored/0_personal/awesome-agents/.github/prompts/`
+-   **Prompts:** `.github/prompts/`
     -   [ ] `speckit.analyze.prompt.md`: Cập nhật cách sử dụng lệnh và ví dụ.
     -   [ ] `speckit.checklist.prompt.md`: Cập nhật cách sử dụng lệnh và ví dụ.
     -   [ ] `speckit.clarify.prompt.md`: Cập nhật cách sử dụng lệnh và ví dụ.

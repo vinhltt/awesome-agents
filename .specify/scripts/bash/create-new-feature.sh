@@ -3,67 +3,68 @@
 set -e
 
 JSON_MODE=false
-SHORT_NAME=""
-BRANCH_NUMBER=""
-ARGS=()
+TICKET_ID=""
+FEATURE_DESCRIPTION=""
+
+# Parse arguments
 i=1
 while [ $i -le $# ]; do
     arg="${!i}"
     case "$arg" in
-        --json) 
-            JSON_MODE=true 
+        --json)
+            JSON_MODE=true
             ;;
-        --short-name)
-            if [ $((i + 1)) -gt $# ]; then
-                echo 'Error: --short-name requires a value' >&2
-                exit 1
-            fi
-            i=$((i + 1))
-            next_arg="${!i}"
-            # Check if the next argument is another option (starts with --)
-            if [[ "$next_arg" == --* ]]; then
-                echo 'Error: --short-name requires a value' >&2
-                exit 1
-            fi
-            SHORT_NAME="$next_arg"
-            ;;
-        --number)
-            if [ $((i + 1)) -gt $# ]; then
-                echo 'Error: --number requires a value' >&2
-                exit 1
-            fi
-            i=$((i + 1))
-            next_arg="${!i}"
-            if [[ "$next_arg" == --* ]]; then
-                echo 'Error: --number requires a value' >&2
-                exit 1
-            fi
-            BRANCH_NUMBER="$next_arg"
-            ;;
-        --help|-h) 
-            echo "Usage: $0 [--json] [--short-name <name>] [--number N] <feature_description>"
+        --help|-h)
+            echo "Usage: $0 <ticket-id> <feature_description> [--json]"
+            echo ""
+            echo "Arguments:"
+            echo "  <ticket-id>         The ticket ID in format aa-### (e.g., aa-001, aa-123)"
+            echo "  <feature_description> Description of the feature"
             echo ""
             echo "Options:"
-            echo "  --json              Output in JSON format"
-            echo "  --short-name <name> Provide a custom short name (2-4 words) for the branch"
-            echo "  --number N          Specify branch number manually (overrides auto-detection)"
-            echo "  --help, -h          Show this help message"
+            echo "  --json             Output in JSON format"
+            echo "  --help, -h         Show this help message"
             echo ""
             echo "Examples:"
-            echo "  $0 'Add user authentication system' --short-name 'user-auth'"
-            echo "  $0 'Implement OAuth2 integration for API' --number 5"
+            echo "  $0 aa-001 'Add user authentication system'"
+            echo "  $0 aa-123 'Implement OAuth2 integration for API' --json"
             exit 0
             ;;
-        *) 
-            ARGS+=("$arg") 
+        *)
+            # First non-flag argument is ticket ID, rest is description
+            if [ -z "$TICKET_ID" ]; then
+                TICKET_ID="$arg"
+            else
+                if [ -n "$FEATURE_DESCRIPTION" ]; then
+                    FEATURE_DESCRIPTION="$FEATURE_DESCRIPTION $arg"
+                else
+                    FEATURE_DESCRIPTION="$arg"
+                fi
+            fi
             ;;
     esac
     i=$((i + 1))
 done
 
-FEATURE_DESCRIPTION="${ARGS[*]}"
+# Validate that both ticket ID and description are provided
+if [ -z "$TICKET_ID" ]; then
+    echo "ERROR: Missing required argument: <ticket-id>" >&2
+    echo "Usage: $0 <ticket-id> <feature_description> [--json]" >&2
+    echo "Example: $0 aa-001 'Add user authentication system'" >&2
+    exit 1
+fi
+
 if [ -z "$FEATURE_DESCRIPTION" ]; then
-    echo "Usage: $0 [--json] [--short-name <name>] [--number N] <feature_description>" >&2
+    echo "ERROR: Missing required argument: <feature_description>" >&2
+    echo "Usage: $0 <ticket-id> <feature_description> [--json]" >&2
+    echo "Example: $0 aa-001 'Add user authentication system'" >&2
+    exit 1
+fi
+
+# Validate ticket ID format (must be aa-### where ### is a number)
+if ! [[ "$TICKET_ID" =~ ^aa-[0-9]+$ ]]; then
+    echo "ERROR: Invalid ticket ID format: '$TICKET_ID'" >&2
+    echo "Ticket ID must be in format 'aa-###' where ### is a number (e.g., aa-001, aa-123)" >&2
     exit 1
 fi
 
@@ -80,35 +81,32 @@ find_repo_root() {
     return 1
 }
 
-# Function to check existing branches (local and remote) and return next available number
-check_existing_branches() {
-    local short_name="$1"
-    
-    # Fetch all remotes to get latest branch info (suppress errors if no remotes)
-    git fetch --all --prune 2>/dev/null || true
-    
-    # Find all branches matching the pattern using git ls-remote (more reliable)
-    local remote_branches=$(git ls-remote --heads origin 2>/dev/null | grep -E "refs/heads/[0-9]+-${short_name}$" | sed 's/.*\/\([0-9]*\)-.*/\1/' | sort -n)
-    
-    # Also check local branches
-    local local_branches=$(git branch 2>/dev/null | grep -E "^[* ]*[0-9]+-${short_name}$" | sed 's/^[* ]*//' | sed 's/-.*//' | sort -n)
-    
-    # Check specs directory as well
-    local spec_dirs=""
-    if [ -d "$SPECS_DIR" ]; then
-        spec_dirs=$(find "$SPECS_DIR" -maxdepth 1 -type d -name "[0-9]*-${short_name}" 2>/dev/null | xargs -n1 basename 2>/dev/null | sed 's/-.*//' | sort -n)
-    fi
-    
-    # Combine all sources and get the highest number
-    local max_num=0
-    for num in $remote_branches $local_branches $spec_dirs; do
-        if [ "$num" -gt "$max_num" ]; then
-            max_num=$num
+# Function to check if a ticket ID already exists
+check_ticket_exists() {
+    local ticket_id="$1"
+
+    # Check if branch already exists (local or remote)
+    if [ "$HAS_GIT" = true ]; then
+        # Fetch all remotes to get latest branch info (suppress errors if no remotes)
+        git fetch --all --prune 2>/dev/null || true
+
+        # Check remote branches
+        if git ls-remote --heads origin 2>/dev/null | grep -q "refs/heads/features/${ticket_id}\$"; then
+            return 0  # Exists
         fi
-    done
-    
-    # Return next number
-    echo $((max_num + 1))
+
+        # Check local branches
+        if git branch 2>/dev/null | grep -qE "^[* ]*features/${ticket_id}\$"; then
+            return 0  # Exists
+        fi
+    fi
+
+    # Check specs directory
+    if [ -d "$SPECS_DIR/${ticket_id}" ]; then
+        return 0  # Exists
+    fi
+
+    return 1  # Does not exist
 }
 
 # Resolve repository root. Prefer git information when available, but fall back
@@ -130,117 +128,27 @@ fi
 
 cd "$REPO_ROOT"
 
-SPECS_DIR="$REPO_ROOT/specs"
+SPECS_DIR="$REPO_ROOT/.specify/features"
 mkdir -p "$SPECS_DIR"
 
-# Function to generate branch name with stop word filtering and length filtering
-generate_branch_name() {
-    local description="$1"
-    
-    # Common stop words to filter out
-    local stop_words="^(i|a|an|the|to|for|of|in|on|at|by|with|from|is|are|was|were|be|been|being|have|has|had|do|does|did|will|would|should|could|can|may|might|must|shall|this|that|these|those|my|your|our|their|want|need|add|get|set)$"
-    
-    # Convert to lowercase and split into words
-    local clean_name=$(echo "$description" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/ /g')
-    
-    # Filter words: remove stop words and words shorter than 3 chars (unless they're uppercase acronyms in original)
-    local meaningful_words=()
-    for word in $clean_name; do
-        # Skip empty words
-        [ -z "$word" ] && continue
-        
-        # Keep words that are NOT stop words AND (length >= 3 OR are potential acronyms)
-        if ! echo "$word" | grep -qiE "$stop_words"; then
-            if [ ${#word} -ge 3 ]; then
-                meaningful_words+=("$word")
-            elif echo "$description" | grep -q "\b${word^^}\b"; then
-                # Keep short words if they appear as uppercase in original (likely acronyms)
-                meaningful_words+=("$word")
-            fi
-        fi
-    done
-    
-    # If we have meaningful words, use first 3-4 of them
-    if [ ${#meaningful_words[@]} -gt 0 ]; then
-        local max_words=3
-        if [ ${#meaningful_words[@]} -eq 4 ]; then max_words=4; fi
-        
-        local result=""
-        local count=0
-        for word in "${meaningful_words[@]}"; do
-            if [ $count -ge $max_words ]; then break; fi
-            if [ -n "$result" ]; then result="$result-"; fi
-            result="$result$word"
-            count=$((count + 1))
-        done
-        echo "$result"
-    else
-        # Fallback to original logic if no meaningful words found
-        echo "$description" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-//' | sed 's/-$//' | tr '-' '\n' | grep -v '^$' | head -3 | tr '\n' '-' | sed 's/-$//'
-    fi
-}
-
-# Generate branch name
-if [ -n "$SHORT_NAME" ]; then
-    # Use provided short name, just clean it up
-    BRANCH_SUFFIX=$(echo "$SHORT_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-//' | sed 's/-$//')
-else
-    # Generate from description with smart filtering
-    BRANCH_SUFFIX=$(generate_branch_name "$FEATURE_DESCRIPTION")
+# Check if ticket already exists
+if check_ticket_exists "$TICKET_ID"; then
+    echo "ERROR: Ticket ID '$TICKET_ID' already exists" >&2
+    echo "Please use a different ticket ID or work on the existing feature" >&2
+    exit 1
 fi
 
-# Determine branch number
-if [ -z "$BRANCH_NUMBER" ]; then
-    if [ "$HAS_GIT" = true ]; then
-        # Check existing branches on remotes
-        BRANCH_NUMBER=$(check_existing_branches "$BRANCH_SUFFIX")
-    else
-        # Fall back to local directory check
-        HIGHEST=0
-        if [ -d "$SPECS_DIR" ]; then
-            for dir in "$SPECS_DIR"/*; do
-                [ -d "$dir" ] || continue
-                dirname=$(basename "$dir")
-                number=$(echo "$dirname" | grep -o '^[0-9]\+' || echo "0")
-                number=$((10#$number))
-                if [ "$number" -gt "$HIGHEST" ]; then HIGHEST=$number; fi
-            done
-        fi
-        BRANCH_NUMBER=$((HIGHEST + 1))
-    fi
-fi
-
-FEATURE_NUM=$(printf "%03d" "$BRANCH_NUMBER")
-BRANCH_NAME="${FEATURE_NUM}-${BRANCH_SUFFIX}"
-
-# GitHub enforces a 244-byte limit on branch names
-# Validate and truncate if necessary
-MAX_BRANCH_LENGTH=244
-if [ ${#BRANCH_NAME} -gt $MAX_BRANCH_LENGTH ]; then
-    # Calculate how much we need to trim from suffix
-    # Account for: feature number (3) + hyphen (1) = 4 chars
-    MAX_SUFFIX_LENGTH=$((MAX_BRANCH_LENGTH - 4))
-    
-    # Truncate suffix at word boundary if possible
-    TRUNCATED_SUFFIX=$(echo "$BRANCH_SUFFIX" | cut -c1-$MAX_SUFFIX_LENGTH)
-    # Remove trailing hyphen if truncation created one
-    TRUNCATED_SUFFIX=$(echo "$TRUNCATED_SUFFIX" | sed 's/-$//')
-    
-    ORIGINAL_BRANCH_NAME="$BRANCH_NAME"
-    BRANCH_NAME="${FEATURE_NUM}-${TRUNCATED_SUFFIX}"
-    
-    >&2 echo "[specify] Warning: Branch name exceeded GitHub's 244-byte limit"
-    >&2 echo "[specify] Original: $ORIGINAL_BRANCH_NAME (${#ORIGINAL_BRANCH_NAME} bytes)"
-    >&2 echo "[specify] Truncated to: $BRANCH_NAME (${#BRANCH_NAME} bytes)"
-fi
+# Set branch and folder names (no description suffix, just the ticket ID)
+BRANCH_NAME="features/$TICKET_ID"
+FOLDER_NAME="$TICKET_ID"
 
 if [ "$HAS_GIT" = true ]; then
-    git checkout -b "$BRANCH_NAME"
+    git checkout -b "$BRANCH_NAME" master
 else
     >&2 echo "[specify] Warning: Git repository not detected; skipped branch creation for $BRANCH_NAME"
 fi
 
-FEATURE_DIR="$SPECS_DIR/$BRANCH_NAME"
+FEATURE_DIR="$SPECS_DIR/$FOLDER_NAME"
 mkdir -p "$FEATURE_DIR"
 
 TEMPLATE="$REPO_ROOT/.specify/templates/spec-template.md"
@@ -248,13 +156,14 @@ SPEC_FILE="$FEATURE_DIR/spec.md"
 if [ -f "$TEMPLATE" ]; then cp "$TEMPLATE" "$SPEC_FILE"; else touch "$SPEC_FILE"; fi
 
 # Set the SPECIFY_FEATURE environment variable for the current session
-export SPECIFY_FEATURE="$BRANCH_NAME"
+export SPECIFY_FEATURE="$FOLDER_NAME"
 
 if $JSON_MODE; then
-    printf '{"BRANCH_NAME":"%s","SPEC_FILE":"%s","FEATURE_NUM":"%s"}\n' "$BRANCH_NAME" "$SPEC_FILE" "$FEATURE_NUM"
+    printf '{"BRANCH_NAME":"%s","SPEC_FILE":"%s","TICKET_ID":"%s","FEATURE_DESCRIPTION":"%s"}\n' "$BRANCH_NAME" "$SPEC_FILE" "$TICKET_ID" "$FEATURE_DESCRIPTION"
 else
     echo "BRANCH_NAME: $BRANCH_NAME"
     echo "SPEC_FILE: $SPEC_FILE"
-    echo "FEATURE_NUM: $FEATURE_NUM"
-    echo "SPECIFY_FEATURE environment variable set to: $BRANCH_NAME"
+    echo "TICKET_ID: $TICKET_ID"
+    echo "FEATURE_DESCRIPTION: $FEATURE_DESCRIPTION"
+    echo "SPECIFY_FEATURE environment variable set to: $FOLDER_NAME"
 fi
