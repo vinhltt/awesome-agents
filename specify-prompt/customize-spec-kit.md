@@ -1,98 +1,106 @@
 # Prompt: Customize GitHub Spec Kit Implementation
 
-**Objective:** Update the existing Spec Kit configuration to follow a new, standardized branching and directory structure. This prompt will serve as a reusable guide for this customization process.
+**Objective:** Update Spec Kit to support flexible folder/prefix-based branching and spec organization.
 
-**Background:** The default Spec Kit behavior for creating new features (e.g., `specs/123-feature-name`) needs to be replaced with a custom format. This involves modifying shell scripts, templates, and command definitions for various AI agents (`Claude`, `Gemini`).
+**Background:** Default Spec Kit creates features as `specs/001-feature-name` on branches `001-feature-name`. This customization adds folder organization and prefix validation while removing semantic naming from branches/folders.
 
 ---
 
 ## 1. Customization Parameters
 
-The following key-value pairs define the new structure. All scripts and templates must be updated to use these values.
-
 | Key | Value | Description |
 | :--- | :--- | :--- |
-| `[prefix]` | `aa` | The prefix for ticket/issue numbers. |
-| `[branch-folder]` | `features` | The git branch folder for new feature branches. |
-| `[main-branch]` | `master` | The primary branch from which new branches are created. |
-| `[folder-specs]` | `.specify/features`| The directory where spec folders will be created. |
+| `[prefix-list]` | [`aa`, `bbb`, `cccc`] | Allowed prefixes for validation |
+| `[default-folder]` | `features` | Default folder when not specified |
+| `[main-branch]` | `master` | Base branch for all features |
+| `[specs-root]` | `.specify` | Root directory for all specs |
 
 ---
 
-## 2. Core Requirements
+## 2. Command Format Changes
 
-### 2.1. Branching Strategy
+### Default Spec Kit Behavior:
+```bash
+/speckit.specify "Build photo album app"
+# Creates: branch "001-photo-albums", spec at "specs/001-photo-albums/"
+```
 
-- **Branch Format:** New feature branches must follow the pattern: `[branch-folder]/[prefix]-###`.
-  - *Example:* `features/aa-123` (no description and no --short-name in branch name)
-- **Base Branch:** All new feature branches must be created from `[main-branch]` (`master`).
+### New Custom Behavior:
 
-### 2.2. Specification Directory Structure
+**Format:** `/speckit.specify [folder]/[prefix]-### "description"` or `/speckit.specify [prefix]-### "description"`
 
-- **Spec Folder:** When a new spec is created, its directory must be generated at: `[folder-specs]/[prefix]-###`.
-  - *Example:* `.specify/features/aa-123` (no description and no --short-name in folder name)
+**Examples:**
+```bash
+# With custom folder
+/speckit.specify hotfix/aa-123 "Fix critical bug"
+# → branch: hotfix/aa-123
+# → spec: .specify/hotfix/aa-123/
 
-### 2.3. Command Usage & Validation
+# Using default folder
+/speckit.specify aa-456 "New feature"
+# → branch: features/aa-456
+# → spec: .specify/features/aa-456/
 
-- **Primary Command:** The main command for creating a new spec must be: `/speckit.specify [prefix]-### [description]`.
-  - *Example:* `/speckit.specify aa-123 "Implement new login flow"`
-- **Input Validation:** The script for `/speckit.specify` must validate that the first argument matches the `[prefix]-###` format. If the argument is missing or invalid, the script should exit with an informative error message for the user.
-- **Consistency:** All other `/speckit.*` commands must be updated to be consistent with this new naming and directory convention.
+# Different prefix
+/speckit.specify bbb-789 "Another task"
+# → branch: features/bbb-789
+# → spec: .specify/features/bbb-789/
+```
+
+**Rules:**
+- `[folder]/` is optional. If omitted, uses `[default-folder]`
+- `[prefix]` must be in `[prefix-list]` (case-sensitive)
+- `###` is any positive integer (1+ digits, no limit)
+- No semantic names in branch/folder (only `[folder]/[prefix]-###`)
+- Branch base is always `[main-branch]`
+
+**Validation:**
+- Validate format: `^([a-z]+/)?([a-z]+)-([0-9]+)$`
+- Extract folder (or use default), prefix, number
+- Verify prefix in `[prefix-list]`
+- Error if invalid: list allowed prefixes
 
 ---
 
-## 3. File Modification Checklist
+## 3. Implementation Scope
 
-The following files must be updated to implement the changes described above.
+### Core Scripts - ALL BASH FILES MUST BE UPDATED (`.specify/scripts/bash/`):
 
-### 3.1. `.specify` Scripts & Templates
+**CRITICAL:** Review and update ALL bash scripts below. Each script likely references the old format.
 
--   **Scripts:** `.specify/scripts/bash/`
-    -   [ ] `check-prerequisites.sh`: Update any checks related to branch or directory naming.
-    -   [ ] `common.sh`: Update helper functions, particularly those that resolve branch names or spec paths.
-    -   [ ] `create-new-feature.sh`: This is the core file. Modify it to handle the new branch format (`[branch-folder]/[prefix]-###`), base branch (`[main-branch]`), and spec directory creation (`[folder-specs]/[prefix]-###`). Implement the argument validation here.
-    -   [ ] `setup-plan.sh`: Ensure this script correctly locates the spec files in the new directory structure.
-    -   [ ] `update-agent-context.sh`: Update to reflect the new file paths and command structures.
+1. **`create-new-feature.sh`** (PRIMARY)
+   - Parse `[folder]/[prefix]-###` format (extract folder, prefix, number)
+   - Validate prefix against `[prefix-list]`
+   - Create branch: `[folder]/[prefix]-###` from `[main-branch]`
+   - Create spec directory: `[specs-root]/[folder]/[prefix]-###/`
+   - Update all variable assignments and path constructions
 
--   **Templates:** `.specify/templates/`
-    -   [ ] `agent-file-template.md`: Update any placeholder text that refers to the old branch/directory format.
-    -   [ ] `checklist-template.md`: Update to reflect the new process.
-    -   [ ] `plan-template.md`: Ensure paths and commands mentioned in the template are correct.
-    -   [ ] `spec-template.md`: Update any references to feature names or paths.
-    -   [ ] `tasks-template.md`: Update any references to feature names or paths.
+2. **`common.sh`**
+   - Update helper functions for branch name resolution
+   - Update helper functions for spec path resolution
+   - Update any functions that parse or construct feature identifiers
 
-### 3.2. `.claude` Agent Commands
+3. **`setup-plan.sh`**
+   - Update spec file path resolution to handle `[specs-root]/[folder]/[prefix]-###/`
+   - Update any feature name parsing logic
 
--   **Commands:** `.claude/commands/`
-    -   [ ] `speckit.analyze.md`: Update command usage and examples.
-    -   [ ] `speckit.checklist.md`: Update command usage and examples.
-    -   [ ] `speckit.clarify.md`: Update command usage and examples.
-    -   [ ] `speckit.constitution.md`: Review for any hardcoded paths or commands.
-    -   [ ] `speckit.implement.md`: Update command usage and examples.
-    -   [ ] `speckit.plan.md`: Update command usage and examples.
-    -   [ ] `speckit.specify.md`: Update the main command definition, description, and examples to match the new format.
-    -   [ ] `speckit.tasks.md`: Update command usage and examples.
+4. **`check-prerequisites.sh`**
+   - Update branch name validation patterns
+   - Update directory structure checks
 
-### 3.3. `.gemini` Agent Commands
+5. **`update-agent-context.sh`**
+   - Update file path references
+   - Update command examples and documentation references
 
--   **Commands:** `.gemini/commands/`
-    -   [ ] `speckit.analyze.toml`: Update command usage and examples.
-    -   [ ] `speckit.checklist.toml`: Update command usage and examples.
-    -   [ ] `speckit.clarify.toml`: Update command usage and examples.
-    -   [ ] `speckit.constitution.toml`: Review for any hardcoded paths or commands.
-    -   [ ] `speckit.implement.toml`: Update command usage and examples.
-    -   [ ] `speckit.plan.toml`: Update command usage and examples.
-    -   [ ] `speckit.specify.toml`: Update the main command definition, description, and examples to match the new format.
-    -   [ ] `speckit.tasks.toml`: Update command usage and examples.
+### Templates (`.specify/templates/`):
+- Update all `*-template.md` files: remove references to semantic naming, update path examples
 
-### 3.4. `.github` Agent Prompts
+### Agent Commands (update usage examples in all):
+- **`.agents/commands/speckit.*.md`**
+- **`.claude/commands/speckit.*.md`**
+- **`.codex/prompts/speckit.*.md`**
+- **`.gemini/commands/speckit.*.toml`**
+- **`.github/prompts/speckit.*.prompt.md`**
+- **`.cursor/commands/speckit.*.md`**
 
--   **Prompts:** `.github/prompts/`
-    -   [ ] `speckit.analyze.prompt.md`: Update command usage and examples.
-    -   [ ] `speckit.checklist.prompt.md`: Update command usage and examples.
-    -   [ ] `speckit.clarify.prompt.md`: Update command usage and examples.
-    -   [ ] `speckit.constitution.prompt.md`: Review for any hardcoded paths or commands.
-    -   [ ] `speckit.implement.prompt.md`: Update command usage and examples.
-    -   [ ] `speckit.plan.prompt.md`: Update command usage and examples.
-    -   [ ] `speckit.specify.prompt.md`: Update the main command definition, description, and examples to match the new format.
-    -   [ ] `speckit.tasks.prompt.md`: Update command usage and examples.
+**Focus:** `speckit.specify.*` files need most changes (command syntax). Others need example updates only.
