@@ -10,7 +10,7 @@
 
 | Key | Value | Description |
 | :--- | :--- | :--- |
-| `[prefix-list]` | [`aa`, `bbb`, `cccc`] | Allowed prefixes for validation |
+| `[prefix-list]` | [`aa`] | Allowed prefixes for validation |
 | `[default-folder]` | `features` | Default folder when not specified |
 | `[main-branch]` | `master` | Base branch for all features |
 | `[specs-root]` | `.specify` | Root directory for all specs |
