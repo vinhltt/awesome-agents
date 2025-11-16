@@ -35,7 +35,56 @@ With complete test suites including:
 
 If missing → Provide guidance on running prerequisite commands
 
-### Step 2: Determine Target Framework
+### Step 2: Read Test Organization Pattern
+
+**CRITICAL**: Read test file organization pattern from test-plan.md
+
+1. **Load test-plan.md**
+2. **Find "Test Organization Decision" section**:
+   ```markdown
+   ## Test Organization Decision
+
+   **Pattern**: Directory-based with `__tests__/` subdirectories
+   **Structure**: `{source-dir}/__tests__/{filename}.test.ts`
+   **Detected from**: ...
+   ```
+
+3. **Extract pattern information**:
+   - **Pattern type**: directory | co-located | separate-project
+   - **Structure template**: Exact file path pattern (e.g., `/tests/**/*.test.ts` or `{source-dir}/__tests__/*.test.ts`)
+   - **Naming convention**: `*.test.ts` vs `test_*.py` etc.
+
+4. **Use this pattern** to determine test file paths in Step 5
+
+**Examples**:
+
+**Pattern 1: Root-level `/tests/` directory (Nuxt/Vue convention)**:
+```
+Structure: /tests/**/*.test.ts
+Source: composables/useCalculator.ts
+Test file: /tests/composables/useCalculator.test.ts  ← Create here
+```
+
+**Pattern 2: `__tests__/` subdirectories (Jest/Vitest convention)**:
+```
+Structure: {source-dir}/__tests__/{filename}.test.ts
+Source: composables/useCalculator.ts
+Test file: composables/__tests__/useCalculator.test.ts  ← Create here
+```
+
+**Pattern 3: Co-located (Angular convention)**:
+```
+Structure: {source-dir}/{filename}.spec.ts
+Source: composables/useCalculator.ts
+Test file: composables/useCalculator.spec.ts  ← Create here
+```
+
+**If "Test Organization Decision" section is missing**:
+- ❌ STOP and report error
+- Tell user to run `/ut.plan {feature-id}` first
+- Pattern decision is MANDATORY for correct test placement
+
+### Step 3: Determine Target Framework
 
 From coverage-report.json:
 
@@ -55,7 +104,7 @@ From coverage-report.json:
 - **Vitest**: JavaScript/TypeScript (Vite projects)
 - **Pytest**: Python
 
-### Step 3: Read Source Code
+### Step 4: Read Source Code
 
 For each test suite in test-plan.md:
 
@@ -67,7 +116,20 @@ For each test suite in test-plan.md:
    - Return types
 3. **Identify dependencies**: Imports, external calls, database access
 
-### Step 4: Generate Test File Structure
+### Step 5: Determine Test File Paths
+
+Using the pattern from Step 2, determine where to create each test file:
+
+1. **Get source file path** from test-plan.md (e.g., `composables/useCalculator.ts`)
+2. **Apply pattern template** from Step 2:
+   - If `/tests/**/*.test.ts` → `/tests/composables/useCalculator.test.ts`
+   - If `{source-dir}/__tests__/*.test.ts` → `composables/__tests__/useCalculator.test.ts`
+   - If `{source-dir}/*.spec.ts` → `composables/useCalculator.spec.ts`
+
+3. **Create parent directories** if they don't exist
+4. **Verify write permissions** before attempting file creation
+
+### Step 6: Generate Test File Structure
 
 **For Jest/Vitest**:
 
@@ -152,7 +214,7 @@ class TestClassName:
             instance.method_name(invalid_input)
 ```
 
-### Step 5: Generate Test Cases from Test Spec
+### Step 7: Generate Test Cases from Test Spec
 
 For each test case in test-spec.md:
 
@@ -184,7 +246,7 @@ it('should calculate total correctly', () => {
 });
 ```
 
-### Step 6: Implement Mocking
+### Step 8: Implement Mocking
 
 Based on test-plan.md mocking strategy:
 
@@ -244,7 +306,7 @@ def test_with_mocked_api(mock_api, instance):
     mock_api.assert_called_once()
 ```
 
-### Step 7: Add Test Data and Fixtures
+### Step 9: Add Test Data and Fixtures
 
 **Jest/Vitest Fixtures**:
 ```typescript
@@ -281,7 +343,7 @@ def database_connection():
     conn.close()
 ```
 
-### Step 8: Handle Async Code
+### Step 10: Handle Async Code
 
 **Jest/Vitest Async Tests**:
 ```typescript
@@ -304,7 +366,7 @@ async def test_async_fetch():
     assert data is not None
 ```
 
-### Step 9: Add Documentation Comments
+### Step 11: Add Documentation Comments
 
 Add descriptive comments to tests:
 

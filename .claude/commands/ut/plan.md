@@ -73,10 +73,426 @@ src/
 ```
 
 **Decision Logic**:
-- If existing tests found → Use same pattern
-- If no tests → Recommend framework convention:
-  - Jest/Vitest: `__tests__/` directory
-  - Pytest: `tests/unit/` directory
+- Pattern detection handled in Step 2.5 below
+- This step shows examples only
+- Actual decision made after scanning existing tests
+
+### Step 2.5: Detect Test Organization Pattern (NEW - Framework-Aware)
+
+**Purpose**: Auto-detect existing test pattern OR recommend framework-specific convention
+
+#### 2.5.1 Scan for Existing Tests
+
+**Search locations**:
+1. **Common test directories**:
+   - `/test/`, `/tests/`, `/__tests__/`, `/spec/`
+   - `{ProjectName}.Tests/` (dotnet)
+   - `{ProjectName}Test/` (Java)
+
+2. **Co-located patterns**:
+   - `*.test.{js,ts,tsx,jsx}`, `*.spec.{js,ts,tsx,jsx}`
+   - `test_*.py`, `*_test.py`
+   - `*.spec.ts` (Angular)
+
+3. **Analyze found tests**:
+```javascript
+{
+  "existingTests": {
+    "found": true,
+    "patterns": [
+      {
+        "type": "co-located",
+        "count": 24,
+        "percentage": 89,
+        "examples": ["src/calculator.test.ts", "src/validator.test.ts"]
+      },
+      {
+        "type": "directory",
+        "path": "__tests__/",
+        "count": 3,
+        "percentage": 11,
+        "examples": ["__tests__/utils.test.ts"]
+      }
+    ],
+    "dominantPattern": "co-located" // if percentage > 70%
+  }
+}
+```
+
+#### 2.5.2 Decision Logic
+
+**Case 1: Dominant Pattern Found (>70%)**
+```
+✓ Following existing project convention: Co-located tests (*.test.ts)
+  Pattern detected: 24 files (89%) use this structure
+  Proceeding with co-located organization...
+```
+→ **Use automatically**, no user prompt needed
+
+**Case 2: Split Pattern (30-70%)**
+```
+⚠️ Multiple test patterns detected in project:
+  - Co-located (*.test.ts): 14 files (58%)
+  - Directory (__tests__/): 10 files (42%)
+
+Recommended: Co-located (slightly dominant pattern)
+
+Options:
+  1. Use co-located pattern [Enter]
+  2. Use __tests__/ directory
+  3. Custom pattern (specify)
+
+Choice:
+```
+→ **Prompt user** for decision
+
+**Case 3: No Tests Found + Known Framework**
+```
+No existing tests found.
+
+Detected framework: Nuxt 4.2.1
+
+Recommended convention for Nuxt:
+  Pattern: Directory-based
+  Structure: /tests/**/*.test.ts
+  Rationale: Official Nuxt documentation recommendation
+
+Options:
+  1. Use recommended convention [Enter]
+  2. Specify custom pattern
+  3. Research alternatives (30s)
+
+Choice:
+```
+→ **MANDATORY**: Use `AskUserQuestion` tool to prompt user with framework recommendation
+→ Show framework convention from database (2.5.3) with rationale
+→ Provide options: Recommended pattern, Alternative patterns, Custom
+→ Wait for user decision before proceeding
+
+**Case 4: No Tests + Unknown/Ambiguous Framework**
+```
+No existing tests found.
+Framework: {framework} (no standard test convention)
+
+Common patterns for {framework}:
+  1. Co-located tests (*.test.ts) - Easy navigation
+  2. /tests/ directory - Clean separation
+  3. __tests__/ subdirectories - Jest/Vitest convention
+
+Preferred test organization:
+```
+→ **Ask user directly**
+
+#### 2.5.3 Framework Convention Database
+
+**Angular**:
+- Pattern: Co-located
+- Files: `*.spec.ts`
+- Rationale: Official Angular CLI convention (ng generate component creates .spec.ts)
+
+**Nuxt/Vue**:
+- Pattern: Directory
+- Files: `/tests/**/*.test.{js,ts}`
+- Alternative: `/test/` or `__tests__/`
+- Rationale: Nuxt docs recommend `/tests/` directory
+
+**React**:
+- Pattern: Directory or Co-located (community split)
+- Files: `__tests__/*.test.{js,tsx}` OR `*.test.{js,tsx}`
+- Rationale: No official standard, React doesn't enforce pattern
+- Recommendation: `__tests__/` for cleaner src/
+
+**Next.js**:
+- Pattern: Same as React (inherits)
+- Files: `__tests__/*.test.{js,tsx}` OR `*.test.{js,tsx}`
+- Note: Check if using App Router vs Pages Router
+
+**dotnet**:
+- Pattern: Separate test project
+- Files: `{ProjectName}.Tests/`
+- Structure: Mirror src/ structure inside Tests project
+- Rationale: Official .NET convention, enforced by tooling
+
+**Python/Pytest**:
+- Pattern: Directory
+- Files: `/tests/test_*.py` OR `/tests/*_test.py`
+- Rationale: Pytest discovery convention
+- Alternative: `pytest.ini` can customize discovery
+
+**Go**:
+- Pattern: Co-located
+- Files: `*_test.go`
+- Rationale: Go testing package convention
+
+**Java (Maven/Gradle)**:
+- Pattern: Separate directory
+- Files: `src/test/java/` (mirrors `src/main/java/`)
+- Rationale: Maven standard directory layout
+
+#### 2.5.4 Save Pattern Decision
+
+**Add to test-plan.md**:
+```markdown
+## Test Organization Decision
+
+**Pattern**: {chosen-pattern}
+**Structure**: {file-structure}
+**Detected from**: {existing-tests | framework-convention | user-preference}
+**Confidence**: {high | medium | low}
+
+### Rationale
+{why-this-pattern-was-chosen}
+
+### Directory Structure
+{detailed structure diagram}
+```
+
+**Example output**:
+```markdown
+## Test Organization Decision
+
+**Pattern**: Co-located tests
+**Structure**: `{source-dir}/{filename}.test.ts`
+**Detected from**: Existing project tests (89% using this pattern)
+**Confidence**: High
+
+### Rationale
+Project already uses co-located tests extensively (24 out of 27 test files).
+Following existing convention for consistency.
+
+### Directory Structure
+```
+composables/
+├── useCalculator.ts
+├── useCalculator.test.ts  ← test file
+utils/
+├── validator.ts
+└── validator.test.ts      ← test file
+```
+
+#### 2.5.5 Special Cases
+
+**Monorepo Detection**:
+- Check for `pnpm-workspace.yaml`, `lerna.json`, `nx.json`
+- If monorepo: Each package may have different pattern
+- Ask user: "Detected monorepo. Apply pattern to all packages or configure per package?"
+
+---
+
+### Step 2.6: Load UT Rules (If Available)
+
+**Purpose**: Apply project-wide testing standards from `ut-rule.md`
+
+**IMPORTANT**: This step applies rules that override defaults but does NOT override user decisions from previous steps
+
+#### 2.6.1 Check for UT Rules File
+
+Look for `ut-rule.md` in:
+1. `/tests/ut-rule.md`
+2. `/docs/ut-rule.md`
+3. `/.specify/ut-rule.md`
+
+**If NOT found** → Skip to Step 3 (use framework defaults)
+**If found** → Continue to Step 2.6.2
+
+#### 2.6.2 Read and Extract Rules
+
+**Load file** and extract:
+
+1. **Naming Conventions**:
+   - Test file pattern (e.g., `*.test.ts`)
+   - Test case naming (e.g., "should {action}")
+   - Describe block pattern
+
+2. **Framework-Specific Syntax**:
+   - Import statement
+   - Preferred matchers (toBe, toEqual, toStrictEqual, etc.)
+   - Error assertion style (toThrow, pytest.raises)
+
+3. **Test Structure**:
+   - Preferred pattern (AAA, Given-When-Then)
+   - Comments policy
+   - Assertions per test
+
+4. **Mocking Strategy**:
+   - External APIs (vi.mock, jest.mock, @patch)
+   - Database (in-memory, mocks)
+   - File system strategy
+   - Time/date mocking
+
+5. **Coverage Requirements**:
+   - Overall target (e.g., 80%)
+   - Critical paths target (e.g., 90%)
+   - Priority-based targets
+
+**Example extraction**:
+```javascript
+{
+  "naming": {
+    "testFile": "*.test.ts",
+    "testCase": "should {action} {when condition}",
+    "describeBlock": "Component/function name"
+  },
+  "matchers": {
+    "primitives": "toBe()",
+    "objects": "toEqual()",
+    "decimals": "toBeCloseTo(value, precision)",
+    "errors": "toThrow('exact message')"
+  },
+  "structure": {
+    "pattern": "AAA",
+    "commentsPolicy": "Only for complex setup",
+    "assertionsPerTest": "Prefer one"
+  },
+  "mocking": {
+    "externalApis": "vi.mock() at file top",
+    "database": "In-memory SQLite",
+    "time": "vi.useFakeTimers()"
+  },
+  "coverage": {
+    "overall": "80%",
+    "critical": "90%",
+    "p1": "95%",
+    "p2": "85%"
+  }
+}
+```
+
+#### 2.6.3 Apply Rules to Test Plan
+
+**Integrate rules into test-plan.md generation**:
+
+1. **Naming section**:
+   ```markdown
+   ## Test Structure
+
+   **File Naming**: {from ut-rule.md}
+   **Test Case Pattern**: {from ut-rule.md}
+
+   Example:
+   ```typescript
+   // File: composables/__tests__/useCalculator.test.ts
+   describe('useCalculator', () => {
+     it('should return sum when given two valid numbers', () => {
+       // AAA pattern (from ut-rule.md)
+       // Arrange
+       const a = 5, b = 3
+       // Act
+       const result = add(a, b)
+       // Assert
+       expect(result).toBe(8)  // ← Matcher from ut-rule.md
+     })
+   })
+   ```
+   ```
+
+2. **Coverage goals** (merge with test-spec.md goals):
+   ```markdown
+   ## Coverage Goals
+
+   **From ut-rule.md**:
+   - Overall: {overall_target}
+   - Critical paths (P1): {p1_target}
+   - Important (P2): {p2_target}
+
+   **From test-spec.md**:
+   - Feature-specific goals: {feature_coverage}
+
+   **Final targets** (stricter of the two):
+   - Overall: MAX(ut-rule, test-spec)
+   - Per-priority: MAX(ut-rule, test-spec)
+   ```
+
+3. **Mocking strategy**:
+   ```markdown
+   ## Mocking Strategy
+
+   **Project standards** (from ut-rule.md):
+   - External APIs: {strategy}
+   - Database: {strategy}
+   - Time/Date: {strategy}
+
+   **Feature-specific** (from test-spec.md):
+   - {specific_mocks_for_this_feature}
+   ```
+
+4. **Test case templates** (use rules for generation):
+   ```markdown
+   ## Implementation Tasks
+
+   ### Task 1: Create test file
+   - File: {path from Step 2.5}
+   - Naming: {pattern from ut-rule.md}
+   - Structure: {pattern from ut-rule.md}
+   - Matchers: {preferred matchers from ut-rule.md}
+
+   Example test case (following ut-rule.md):
+   ```typescript
+   import { {imports from ut-rule.md} } from 'vitest'
+
+   it('{naming pattern from ut-rule.md}', () => {
+     // {structure pattern from ut-rule.md}
+     // Arrange
+     ...
+     // Act
+     ...
+     // Assert
+     expect(result).{matcher from ut-rule.md}(expected)
+   })
+   ```
+   ```
+
+#### 2.6.4 Note Rules in Test Plan
+
+**Add section to test-plan.md**:
+```markdown
+## UT Rules Applied
+
+**Source**: /tests/ut-rule.md
+**Version**: {version from ut-rule.md}
+
+**Rules enforced**:
+- ✅ Naming: {pattern}
+- ✅ Structure: {AAA/Given-When-Then}
+- ✅ Matchers: {preferred matchers}
+- ✅ Mocking: {strategies}
+- ✅ Coverage: {targets}
+
+**Reference**: See /tests/ut-rule.md for complete rules
+
+**Note**: All generated tests MUST follow these rules for consistency.
+```
+
+#### 2.6.5 Conflict Resolution
+
+**If ut-rule.md conflicts with test-spec.md or user decisions**:
+
+**Priority order** (highest to lowest):
+1. **User decisions from Step 2.5** (test organization pattern chosen by user)
+2. **ut-rule.md** (project-wide standards)
+3. **test-spec.md** (feature-specific requirements)
+4. **Framework defaults**
+
+**Example conflict**:
+- ut-rule.md says: "Coverage: 80%"
+- test-spec.md says: "Coverage: 85%" (higher)
+- **Resolution**: Use 85% (stricter requirement wins)
+
+**Example non-conflict**:
+- ut-rule.md says: "Use toBe() for primitives"
+- test-spec.md silent on matchers
+- **Resolution**: Use toBe() from ut-rule.md
+
+**Migration Scenario**:
+- Old tests: `/test/` directory
+- New tests: `__tests__/` directory
+- Action: Recommend completing migration OR staying with old pattern
+- Warn: "Inconsistent patterns detected. Consider standardizing."
+
+**No Source Files**:
+- If no `.js/.ts/.py` files found in expected locations
+- Warn: "No source files detected. Test plan may be incomplete."
+- Ask: "Specify source directory?"
 
 ### Step 3: Define Test Suites
 
@@ -256,6 +672,19 @@ Generate Markdown document:
 - Coverage Report: `.specify/features/{feature-id}/coverage-report.json`
 
 **Status**: Draft
+
+## Test Organization Decision
+
+**Pattern**: {chosen-pattern}
+**Structure**: {file-structure}
+**Detected from**: {existing-tests | framework-convention | user-preference}
+**Confidence**: {high | medium | low}
+
+### Rationale
+{why-this-pattern-was-chosen}
+
+### Directory Structure
+{detailed structure diagram}
 
 ## Test Structure
 

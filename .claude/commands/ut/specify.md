@@ -29,6 +29,170 @@ Creates or updates `.specify/features/{feature-id}/test-spec.md` with:
 2. If missing, respond: "Feature specification not found. Please run `/speckit.specify {feature-id}` first."
 3. If spec exists but incomplete, warn user and ask to proceed or complete spec first
 
+### Step 1.5: Check and Create UT Rules (First-Time Setup)
+
+**Purpose**: Ensure project has `ut-rule.md` file defining unit testing standards
+
+**CRITICAL**: This step runs ONLY ONCE per project (first time `/ut.specify` is called)
+
+#### 1.5.1 Check for Existing UT Rules
+
+Look for `ut-rule.md` in these locations:
+1. `/tests/ut-rule.md`
+2. `/docs/ut-rule.md`
+3. `/.specify/ut-rule.md`
+
+If found → **Skip to Step 2** (rules already exist)
+
+#### 1.5.2 Detect Framework (If No Rules Found)
+
+**From package.json** (JavaScript/TypeScript):
+```json
+{
+  "devDependencies": {
+    "vitest": "^3.2.4",  // → Framework: Vitest
+    "jest": "^29.7.0",   // → Framework: Jest
+    "@angular/cli": "*"  // → Framework: Angular + Jasmine/Karma
+  }
+}
+```
+
+**From pyproject.toml** (Python):
+```toml
+[tool.poetry.dev-dependencies]
+pytest = "^7.4.0"  # → Framework: Pytest
+```
+
+**Extract**:
+- Framework name (e.g., "Vitest", "Jest", "Pytest")
+- Framework version (e.g., "3.2.4")
+
+#### 1.5.3 Scan Existing Tests (If Any)
+
+**Search for test files**:
+- JavaScript/TypeScript: `**/*.test.{js,ts,tsx}`, `**/*.spec.{js,ts,tsx}`
+- Python: `**/test_*.py`, `**/*_test.py`
+
+**If >5 test files found**, analyze patterns:
+1. **Naming patterns**:
+   - Count "should" pattern usage
+   - Count "it/test" pattern usage
+2. **Matchers used** (from imports and usage):
+   - `toBe`, `toEqual`, `toStrictEqual`, etc.
+3. **Mocking patterns**:
+   - `vi.mock()`, `jest.mock()`, `@patch`, etc.
+
+**If <5 test files or none** → Use framework defaults
+
+#### 1.5.4 Ask User to Create UT Rules
+
+**MANDATORY**: Use `AskUserQuestion` tool to confirm UT rules creation
+
+**Prompt template**:
+```
+No unit test rules found for this project.
+
+Detected: {Framework} {Version}
+{If existing tests found: "Found {count} existing test files"}
+
+Create ut-rule.md to standardize unit testing?
+This will define:
+  • Test file organization and naming
+  • Framework-specific matchers and syntax
+  • Mocking strategies
+  • Coverage requirements
+
+Location: {/tests/ut-rule.md or /docs/ut-rule.md}
+```
+
+**Options**:
+1. **"Yes, create with recommended settings"** (Default - Enter)
+   - Use framework template
+   - Apply detected patterns from existing tests
+   - Ask minimal customization questions
+
+2. **"Yes, but let me customize"**
+   - Ask detailed questions about preferences
+   - Naming conventions?
+   - Coverage threshold?
+   - Mocking strategy?
+
+3. **"No, skip for now"**
+   - Create test-spec.md without ut-rule.md
+   - Warn: "Tests will not follow consistent style"
+
+**If user selects "No"** → Skip to Step 2
+**If user selects "Yes"** → Continue to Step 1.5.5
+
+#### 1.5.5 Generate UT Rules File
+
+**Load template**: `.specify/templates/ut-rule-template.md`
+
+**Fill placeholders based on**:
+
+1. **Framework detection** (Step 1.5.2):
+   - `[FRAMEWORK_NAME]` → "Vitest"
+   - `[VERSION]` → "3.2.4"
+   - `[IMPORT_EXAMPLE]` → Framework-specific imports
+   - `[MATCHER]` examples → Framework-specific syntax
+
+2. **Existing test analysis** (Step 1.5.3) OR Framework defaults:
+   - `[PATTERN]` → Detected naming pattern or framework default
+   - `[PATTERN_TYPE]` → Detected organization or framework recommendation
+   - `[MOCKING_EXAMPLE]` → Framework-specific mocking syntax
+
+3. **User preferences** (if "customize" selected):
+   - Coverage threshold: `[PERCENTAGE]`
+   - Naming preference: `[PATTERN]`
+   - Mocking strategy: `[APPROACH]`
+
+**Example filled template** (Vitest):
+```markdown
+# Unit Test Rules - Nuxt Calculator
+
+**Framework**: Vitest 3.2.4
+**Created**: 2025-11-15
+...
+
+### Test Files
+- **Pattern**: `*.test.ts`
+- **Example**: `useCalculator.test.ts`
+
+### Import Statement
+```typescript
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+```
+
+### Matchers & Assertions
+- **Primitives**: `toBe()`
+- **Objects/Arrays**: `toEqual()`
+- **Decimals**: `toBeCloseTo(value, precision)`
+...
+```
+
+#### 1.5.6 Save UT Rules
+
+**Determine location**:
+1. If `/docs/` folder exists → Save to `/docs/ut-rule.md`
+2. Else if `/tests/` folder exists → Save to `/tests/ut-rule.md`
+3. Else → Create `/tests/` folder and save to `/tests/ut-rule.md`
+
+**After saving**:
+```
+✅ UT Rules created: /tests/ut-rule.md
+
+Framework: Vitest 3.2.4
+Rules defined:
+  • Test files: *.test.ts in __tests__/ subdirectories
+  • Naming: "should {action}" pattern
+  • Matchers: toBe, toEqual, toThrow, toBeCloseTo
+  • Coverage: 80% target (90% for critical paths)
+
+These rules will be applied when generating tests.
+
+Proceeding to create test specification...
+```
+
 ### Step 2: Load Test Specification Template
 
 1. Read the template from `.specify/templates/test-spec-template.md`
