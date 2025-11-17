@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
 # Common functions and variables for all scripts
 
-# Get repository root, with fallback for non-git repositories
-get_repo_root() {
-    if git rev-parse --show-toplevel >/dev/null 2>&1; then
-        git rev-parse --show-toplevel
-    else
-        # Fall back to script location for non-git repos
-        local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-        (cd "$script_dir/../../.." && pwd)
-    fi
+# Source environment configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common-env.sh" 2>/dev/null || {
+    echo "ERROR: Failed to load common-env.sh" >&2
+    exit 1
 }
+
+# Note: get_repo_root() is now provided by common-env.sh
 
 # Get current branch, with fallback for non-git repositories
 get_current_branch() {
@@ -28,17 +26,21 @@ get_current_branch() {
 
     # For non-git repos, try to find the latest feature directory
     local repo_root=$(get_repo_root)
-    local specs_dir="$repo_root/.specify/features"
+    local specs_dir="$repo_root/$SPECKIT_SPECS_ROOT/$SPECKIT_DEFAULT_FOLDER"
 
     if [[ -d "$specs_dir" ]]; then
         local latest_feature=""
         local highest=0
 
+        # Build dynamic regex from allowed prefixes
+        local prefix_pattern="(${SPECKIT_PREFIX_LIST//,/|})"
+
         for dir in "$specs_dir"/*; do
             if [[ -d "$dir" ]]; then
                 local dirname=$(basename "$dir")
-                if [[ "$dirname" =~ ^aa-([0-9]+)$ ]]; then
-                    local number=${BASH_REMATCH[1]}
+                # Match any allowed prefix with numbers
+                if [[ "$dirname" =~ ^${prefix_pattern}-([0-9]+)$ ]]; then
+                    local number=${BASH_REMATCH[2]}
                     number=$((10#$number))
                     if [[ "$number" -gt "$highest" ]]; then
                         highest=$number
@@ -54,7 +56,7 @@ get_current_branch() {
         fi
     fi
 
-    echo "master"  # Final fallback to master (main branch)
+    echo "$SPECKIT_MAIN_BRANCH"  # Final fallback to configured main branch
 }
 
 # Check if we have git available
@@ -72,28 +74,50 @@ check_feature_branch() {
         return 0
     fi
 
-    if [[ ! "$branch" =~ ^features/aa-[0-9]+$ ]]; then
+    # Build dynamic regex from allowed prefixes and folders
+    local prefix_pattern="(${SPECKIT_PREFIX_LIST//,/|})"
+    local branch_pattern="^[a-z]+/${prefix_pattern}-[0-9]+$"
+
+    if [[ ! "$branch" =~ $branch_pattern ]]; then
         echo "ERROR: Not on a feature branch. Current branch: $branch" >&2
-        echo "Feature branches should be named like: features/aa-001" >&2
+        echo "Feature branches should be named like: $SPECKIT_DEFAULT_FOLDER/prefix-number" >&2
+        echo "Allowed prefixes: $SPECKIT_PREFIX_LIST" >&2
         return 1
     fi
 
     return 0
 }
 
-get_feature_dir() { echo "$1/.specify/features/$2"; }
+get_feature_dir() {
+    local repo_root="$1"
+    local ticket_id="$2"
+
+    # Parse the branch/ticket to get folder and ticket ID
+    # If ticket_id contains /, it's folder/ticket format
+    if [[ "$ticket_id" == */* ]]; then
+        local folder="${ticket_id%%/*}"
+        local ticket="${ticket_id#*/}"
+        echo "$repo_root/$SPECKIT_SPECS_ROOT/$folder/$ticket"
+    else
+        # Use default folder
+        echo "$repo_root/$SPECKIT_SPECS_ROOT/$SPECKIT_DEFAULT_FOLDER/$ticket_id"
+    fi
+}
 
 # Find feature directory - now simpler with exact ticket ID match
 find_feature_dir_by_prefix() {
     local repo_root="$1"
     local branch_name="$2"
-    local specs_dir="$repo_root/.specify/features"
 
-    # Strip "features/" prefix if present to get the ticket ID (aa-###)
-    local ticket_id="${branch_name#features/}"
-
-    # The feature directory should exactly match the ticket ID
-    echo "$specs_dir/$ticket_id"
+    # Extract folder and ticket ID from branch name (folder/prefix-number)
+    if [[ "$branch_name" =~ ^([a-z]+)/(.+)$ ]]; then
+        local folder="${BASH_REMATCH[1]}"
+        local ticket_id="${BASH_REMATCH[2]}"
+        echo "$repo_root/$SPECKIT_SPECS_ROOT/$folder/$ticket_id"
+    else
+        # Fallback: assume it's just the ticket ID with default folder
+        echo "$repo_root/$SPECKIT_SPECS_ROOT/$SPECKIT_DEFAULT_FOLDER/$branch_name"
+    fi
 }
 
 get_feature_paths() {
