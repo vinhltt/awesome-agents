@@ -23,11 +23,33 @@ Creates or updates `.specify/features/{feature-id}/test-spec.md` with:
 
 ## Execution Instructions
 
-### Step 1: Validate Input
+### Step 1: Validate Input and Test Branch
 
 1. Check that feature spec exists at `.specify/features/{feature-id}/spec.md`
 2. If missing, respond: "Feature specification not found. Please run `/speckit.specify {feature-id}` first."
 3. If spec exists but incomplete, warn user and ask to proceed or complete spec first
+
+**Test Branch Strategy** (Handled by `ut-specify.sh` script):
+
+The script automatically manages test branches:
+
+- **Branch Naming**: `test/{folder}/{ticket}` (e.g., `test/features/AL-204`)
+- **Creation**: If not on a test branch, creates from `main` branch
+- **Existing Branch**: If test branch exists, prompts to switch or stay on current
+- **Already on Test Branch**: Continues on current branch
+
+**Branch Workflow**:
+```
+main → test/features/AL-204 (created by /ut:specify)
+     → Write tests, commit changes
+     → Create PR: test/features/AL-204 → main
+     → After merge, delete test branch
+```
+
+This separates test development from feature implementation, enabling:
+- Independent test reviews
+- Parallel test development
+- Clear separation of concerns between code and tests
 
 ### Step 1.5: Check and Create UT Rules (First-Time Setup)
 
