@@ -11,12 +11,19 @@
 
 set -e  # Exit on error
 
+# Source environment configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common-env.sh" 2>/dev/null || {
+    echo "ERROR: Failed to load common-env.sh" >&2
+    exit 1
+}
+
 # Parse arguments
 FEATURE_ID="$1"
 
-# Set up paths
-REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-FEATURES_DIR="${REPO_ROOT}/.specify/features"
+# Set up paths using environment configuration
+REPO_ROOT=$(get_repo_root)
+FEATURES_DIR="${REPO_ROOT}/${SPECKIT_SPECS_ROOT}/${SPECKIT_DEFAULT_FOLDER}"
 
 # Check if features directory exists
 if [ ! -d "$FEATURES_DIR" ]; then
@@ -104,8 +111,18 @@ if [ -z "$FEATURE_ID" ]; then
     exit 0
 fi
 
-# Specific feature status
-FEATURE_DIR="${FEATURES_DIR}/${FEATURE_ID}"
+# Specific feature status - parse feature ID
+if [[ "$FEATURE_ID" == */* ]]; then
+    # Contains folder: hotfix/aa-2
+    FOLDER="${FEATURE_ID%%/*}"
+    TICKET="${FEATURE_ID#*/}"
+else
+    # No folder, use default: aa-2
+    FOLDER="$SPECKIT_DEFAULT_FOLDER"
+    TICKET="$FEATURE_ID"
+fi
+
+FEATURE_DIR="${REPO_ROOT}/${SPECKIT_SPECS_ROOT}/${FOLDER}/${TICKET}"
 
 if [ ! -d "$FEATURE_DIR" ]; then
     echo ""

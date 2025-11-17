@@ -10,6 +10,13 @@
 
 set -e  # Exit on error
 
+# Source environment configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common-env.sh" 2>/dev/null || {
+    echo "ERROR: Failed to load common-env.sh" >&2
+    exit 1
+}
+
 # Parse arguments
 FEATURE_ID="$1"
 
@@ -21,8 +28,17 @@ if [ -z "$FEATURE_ID" ]; then
 fi
 
 # Set up paths
-REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-FEATURE_DIR="${REPO_ROOT}/.specify/features/${FEATURE_ID}"
+REPO_ROOT=$(get_repo_root)
+
+# Parse feature ID to get folder and ticket
+if [[ "$FEATURE_ID" == */* ]]; then
+    FOLDER="${FEATURE_ID%%/*}"
+    TICKET="${FEATURE_ID#*/}"
+else
+    FOLDER="$SPECKIT_DEFAULT_FOLDER"
+    TICKET="$FEATURE_ID"
+fi
+FEATURE_DIR="${REPO_ROOT}/${SPECKIT_SPECS_ROOT}/${FOLDER}/${TICKET}"
 TEST_SPEC="${FEATURE_DIR}/test-spec.md"
 TEST_PLAN="${FEATURE_DIR}/test-plan.md"
 REVIEW_REPORT="${FEATURE_DIR}/review-report.md"

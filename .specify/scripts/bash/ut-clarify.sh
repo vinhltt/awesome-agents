@@ -9,6 +9,13 @@
 #          ut-clarify.sh aa-2 --list
 #          ut-clarify.sh aa-2 --reset
 #
+
+# Source environment configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common-env.sh" 2>/dev/null || {
+    echo "ERROR: Failed to load common-env.sh" >&2
+    exit 1
+}
 # This script handles argument parsing and file I/O for the /ut.clarify command.
 # All intelligent logic (scope management, artifact updates) is handled by AI agent.
 
@@ -120,8 +127,17 @@ if [ -z "$ACTION" ]; then
 fi
 
 # Set up paths
-REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-FEATURE_DIR="${REPO_ROOT}/.specify/features/${FEATURE_ID}"
+REPO_ROOT=$(get_repo_root)
+
+# Parse feature ID to get folder and ticket
+if [[ "$FEATURE_ID" == */* ]]; then
+    FOLDER="${FEATURE_ID%%/*}"
+    TICKET="${FEATURE_ID#*/}"
+else
+    FOLDER="$SPECKIT_DEFAULT_FOLDER"
+    TICKET="$FEATURE_ID"
+fi
+FEATURE_DIR="${REPO_ROOT}/${SPECKIT_SPECS_ROOT}/${FOLDER}/${TICKET}"
 SCOPE_FILE="${FEATURE_DIR}/.ut-scope.json"
 SPEC_FILE="${FEATURE_DIR}/spec.md"
 TEST_SPEC_FILE="${FEATURE_DIR}/test-spec.md"
