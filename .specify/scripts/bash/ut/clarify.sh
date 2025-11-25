@@ -12,7 +12,7 @@
 
 # Source environment configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/common-env.sh" 2>/dev/null || {
+source "$SCRIPT_DIR/../common-env.sh" 2>/dev/null || {
     echo "ERROR: Failed to load common-env.sh" >&2
     exit 1
 }
@@ -126,18 +126,11 @@ if [ -z "$ACTION" ]; then
     exit 1
 fi
 
-# Set up paths
-REPO_ROOT=$(get_repo_root)
+# Set up paths using common parsing function
+parsed=$(parse_feature_id "$FEATURE_ID") || exit 1
+IFS='|' read -r FOLDER TICKET FEATURE_DIR BRANCH_NAME <<< "$parsed"
 
-# Parse feature ID to get folder and ticket
-if [[ "$FEATURE_ID" == */* ]]; then
-    FOLDER="${FEATURE_ID%%/*}"
-    TICKET="${FEATURE_ID#*/}"
-else
-    FOLDER="$SPECKIT_DEFAULT_FOLDER"
-    TICKET="$FEATURE_ID"
-fi
-FEATURE_DIR="${REPO_ROOT}/${SPECKIT_SPECS_ROOT}/${FOLDER}/${TICKET}"
+REPO_ROOT=$(get_repo_root)
 SCOPE_FILE="${FEATURE_DIR}/.ut-scope.json"
 SPEC_FILE="${FEATURE_DIR}/spec.md"
 TEST_SPEC_FILE="${FEATURE_DIR}/test-spec.md"

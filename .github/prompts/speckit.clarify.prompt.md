@@ -16,6 +16,48 @@ Goal: Detect and reduce ambiguity or missing decision points in the active featu
 
 Note: This clarification workflow is expected to run (and be completed) BEFORE invoking `/speckit.plan`. If the user explicitly states they are skipping clarification (e.g., exploratory spike), you may proceed, but must warn that downstream rework risk increases.
 
+### Step 0: Validate Task ID
+
+**CRITICAL**: Check task ID argument FIRST before any operations.
+**NOTE**: Users must create feature branch manually before running this command.
+
+1. **Parse user input**:
+   - Extract first argument from command
+   - Expected format: `[folder/]prefix-number`
+
+2. **Check if task ID provided**:
+   ```
+   If first argument is EMPTY or MISSING:
+     ERROR: "Task ID required. Usage: /speckit.clarify {task-id}"
+     STOP - Do NOT proceed to Step 1
+   ```
+
+3. **Validate task ID format**:
+   - Must match pattern: `[folder/]prefix-number`
+   - Prefix must be in `.speckit.env` SPECKIT_PREFIX_LIST (default: aa)
+   - Examples:
+     - ✅ `/speckit.clarify aa-001` → feature ID: `aa-001`
+     - ✅ `/speckit.clarify hotfix/aa-123` → feature ID: `hotfix/aa-123`
+     - ✅ `/speckit.clarify AL-991` → feature ID: `AL-991` (if AL in prefix list)
+     - ❌ `/speckit.clarify` → ERROR (no task ID)
+     - ❌ `/speckit.clarify invalid-id` → ERROR (invalid format)
+
+4. **Determine feature directory**:
+   - Pattern: `.specify/{folder}/{prefix-number}/`
+   - Default folder: `features` (from SPECKIT_DEFAULT_FOLDER)
+   - Examples:
+     - `aa-001` → `.specify/features/aa-001/`
+     - `hotfix/aa-123` → `.specify/hotfix/aa-123/`
+
+**Error Handling**:
+- If task ID missing → ERROR with usage example, STOP
+- If task ID invalid format → ERROR with format requirements, STOP
+- If feature directory not found → ERROR, suggest running `/speckit.specify` first
+
+**After Validation**:
+- Proceed to Step 1 only if task ID valid
+- Use task ID to locate feature files in `.specify/{folder}/{task-id}/`
+
 Execution steps:
 
 1. Run `.specify/scripts/bash/check-prerequisites.sh --json --paths-only` from repo root **once** (combined `--json --paths-only` mode / `-Json -PathsOnly`). Parse minimal JSON payload fields:

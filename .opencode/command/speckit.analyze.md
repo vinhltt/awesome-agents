@@ -21,48 +21,6 @@ Identify inconsistencies, duplications, ambiguities, and underspecified items ac
 **Constitution Authority**: The project constitution (`.specify/memory/constitution.md`) is **non-negotiable** within this analysis scope. Constitution conflicts are automatically CRITICAL and require adjustment of the spec, plan, or tasks—not dilution, reinterpretation, or silent ignoring of the principle. If a principle itself needs to change, that must occur in a separate, explicit constitution update outside `/speckit.analyze`.
 
 ## Execution Steps
-### Step 0: Validate Task ID
-
-**CRITICAL**: Check task ID argument FIRST before any operations.
-**NOTE**: Users must create feature branch manually before running this command.
-
-1. **Parse user input**:
-   - Extract first argument from command
-   - Expected format: `[folder/]prefix-number`
-
-2. **Check if task ID provided**:
-   ```
-   If first argument is EMPTY or MISSING:
-     ERROR: "Task ID required. Usage: /speckit.analyze {task-id}"
-     STOP - Do NOT proceed to Step 1
-   ```
-
-3. **Validate task ID format**:
-   - Must match pattern: `[folder/]{prefix}-number`
-   - `{prefix}` = value from `.speckit.env` SPECKIT_PREFIX_LIST
-   - Examples (assuming prefix=pref):
-     - ✅ `/speckit.analyze {prefix}-001` → e.g., `pref-001`
-     - ✅ `/speckit.analyze hotfix/{prefix}-123` → e.g., `hotfix/pref-123`
-     - ✅ `/speckit.analyze AL-991` → if AL in SPECKIT_PREFIX_LIST
-     - ❌ `/speckit.analyze` → ERROR (no task ID)
-     - ❌ `/speckit.analyze invalid-id` → ERROR (invalid format)
-
-4. **Determine feature directory**:
-   - Pattern: `.specify/{folder}/{prefix}-number/`
-   - Default folder: `features` (from SPECKIT_DEFAULT_FOLDER)
-   - Examples (assuming prefix=pref):
-     - `{prefix}-001` → `.specify/features/pref-001/`
-     - `hotfix/{prefix}-123` → `.specify/hotfix/pref-123/`
-
-**Error Handling**:
-- If task ID missing → ERROR with usage example, STOP
-- If task ID invalid format → ERROR with format requirements, STOP
-- If feature directory not found → ERROR, suggest running `/speckit.specify` first
-
-**After Validation**:
-- Proceed to Step 1 only if task ID valid
-- Use task ID to locate feature files in `.specify/{folder}/{task-id}/`
-
 
 ### 1. Initialize Analysis Context
 

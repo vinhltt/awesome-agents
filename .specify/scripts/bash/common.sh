@@ -150,3 +150,62 @@ EOF
 check_file() { [[ -f "$1" ]] && echo "  ✓ $2" || echo "  ✗ $2"; }
 check_dir() { [[ -d "$1" && -n $(ls -A "$1" 2>/dev/null) ]] && echo "  ✓ $2" || echo "  ✗ $2"; }
 
+# Create or switch to a feature branch
+# Usage: create_or_switch_branch <branch-name> [--force]
+# Options:
+#   --force: Create new branch without interactive prompts (for /speckit.specify)
+# Returns: 0 on success, 1 if user declined to switch
+create_or_switch_branch() {
+    local branch_name="$1"
+    local force_mode=false
+
+    if [[ "$2" == "--force" ]]; then
+        force_mode=true
+    fi
+
+    # Check if git is available
+    if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
+        echo "⚠️  Warning: Git repository not detected; skipped branch creation" >&2
+        return 0
+    fi
+
+    local current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "$SPECKIT_MAIN_BRANCH")
+
+    # If force mode, just create the branch
+    if $force_mode; then
+        git checkout -b "$branch_name" "$SPECKIT_MAIN_BRANCH" 2>/dev/null || {
+            echo "ERROR: Failed to create branch $branch_name" >&2
+            return 1
+        }
+        return 0
+    fi
+
+    # Interactive mode (for /ut:specify)
+    # Check if already on a feature branch
+    if [[ "$current_branch" =~ ^features/|^test/|^hotfix/ ]]; then
+        echo "ℹ️  Already on feature branch: $current_branch"
+        return 0
+    fi
+
+    # Check if feature branch already exists
+    if git show-ref --verify --quiet "refs/heads/$branch_name"; then
+        echo "ℹ️  Feature branch exists: $branch_name"
+        echo ""
+        read -p "Switch to existing feature branch? (y/N): " switch_branch
+        if [[ "$switch_branch" =~ ^[Yy]$ ]]; then
+            git checkout "$branch_name"
+            echo "✅ Switched to $branch_name"
+            return 0
+        else
+            echo "ℹ️  Staying on current branch: $current_branch"
+            return 1
+        fi
+    else
+        # Create new feature branch from main
+        echo "🌿 Creating feature branch: $branch_name from $SPECKIT_MAIN_BRANCH"
+        git checkout -b "$branch_name" "$SPECKIT_MAIN_BRANCH"
+        echo "✅ Feature branch created and checked out"
+        return 0
+    fi
+}
+

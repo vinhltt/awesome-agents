@@ -12,7 +12,7 @@ set -e  # Exit on error
 
 # Source environment configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/common-env.sh" 2>/dev/null || {
+source "$SCRIPT_DIR/../common-env.sh" 2>/dev/null || {
     echo "ERROR: Failed to load common-env.sh" >&2
     exit 1
 }
@@ -27,29 +27,12 @@ if [ -z "$FEATURE_ID" ]; then
     exit 1
 fi
 
-# Set up paths using environment configuration
-REPO_ROOT=$(get_repo_root)
+# Set up paths using common parsing function
+parsed=$(parse_feature_id "$FEATURE_ID") || exit 1
+IFS='|' read -r FOLDER TICKET FEATURE_DIR BRANCH_NAME <<< "$parsed"
 
-# Parse feature ID to get folder and ticket
-if [[ "$FEATURE_ID" == */* ]]; then
-    # Contains folder: hotfix/aa-2
-    FOLDER="${FEATURE_ID%%/*}"
-    TICKET="${FEATURE_ID#*/}"
-else
-    # No folder, use default: aa-2
-    FOLDER="$SPECKIT_DEFAULT_FOLDER"
-    TICKET="$FEATURE_ID"
-fi
-
-FEATURE_DIR="${REPO_ROOT}/${SPECKIT_SPECS_ROOT}/${FOLDER}/${TICKET}"
 SPEC_FILE="${FEATURE_DIR}/spec.md"
 TEST_SPEC_FILE="${FEATURE_DIR}/test-spec.md"
-
-# Check if we're in a git repository
-HAS_GIT=false
-if git rev-parse --show-toplevel >/dev/null 2>&1; then
-    HAS_GIT=true
-fi
 
 # Validate feature directory exists
 if [ ! -d "$FEATURE_DIR" ]; then
@@ -65,38 +48,9 @@ if [ ! -f "$SPEC_FILE" ]; then
     exit 1
 fi
 
-# Create test branch if git is available
-if [ "$HAS_GIT" = true ]; then
-    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "$SPECKIT_MAIN_BRANCH")
-    TEST_BRANCH_NAME="test/${FOLDER}/${TICKET}"
-
-    # Check if already on a test branch
-    if [[ "$CURRENT_BRANCH" =~ ^test/ ]]; then
-        echo "ℹ️  Already on test branch: $CURRENT_BRANCH"
-    else
-        # Check if test branch already exists
-        if git show-ref --verify --quiet "refs/heads/$TEST_BRANCH_NAME"; then
-            echo "ℹ️  Test branch exists: $TEST_BRANCH_NAME"
-            echo ""
-            read -p "Switch to existing test branch? (y/N): " switch_branch
-            if [[ "$switch_branch" =~ ^[Yy]$ ]]; then
-                git checkout "$TEST_BRANCH_NAME"
-                echo "✅ Switched to $TEST_BRANCH_NAME"
-            else
-                echo "ℹ️  Staying on current branch: $CURRENT_BRANCH"
-            fi
-        else
-            # Create new test branch from main
-            echo "🌿 Creating test branch: $TEST_BRANCH_NAME from $SPECKIT_MAIN_BRANCH"
-            git checkout -b "$TEST_BRANCH_NAME" "$SPECKIT_MAIN_BRANCH"
-            echo "✅ Test branch created and checked out"
-        fi
-    fi
-    echo ""
-else
-    echo "⚠️  Warning: Git repository not detected; skipped test branch creation"
-    echo ""
-fi
+# Create or switch to feature branch (interactive mode)
+create_or_switch_branch "$BRANCH_NAME"
+echo ""
 
 # Check if test spec already exists
 if [ -f "$TEST_SPEC_FILE" ]; then

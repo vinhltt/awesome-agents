@@ -126,6 +126,42 @@ parse_ticket_id() {
     fi
 }
 
+# Parse feature ID and return folder, ticket, and paths
+# Usage: parse_feature_id <feature-id>
+# Returns: folder|ticket|feature_dir|branch_name
+# Examples:
+#   aa-123        → features|aa-123|.specify/features/aa-123|features/aa-123
+#   test/aa-123   → test|aa-123|.specify/test/aa-123|test/aa-123
+parse_feature_id() {
+    local feature_id="$1"
+    local folder=""
+    local ticket=""
+    local feature_dir=""
+    local branch_name=""
+
+    # Get repo root
+    local repo_root=$(get_repo_root)
+
+    # Parse feature ID
+    if [[ "$feature_id" == */* ]]; then
+        # Contains folder: test/aa-123 → .specify/test/aa-123
+        folder="${feature_id%%/*}"
+        ticket="${feature_id#*/}"
+    else
+        # No folder, use default: aa-123 → .specify/features/aa-123
+        folder="$SPECKIT_DEFAULT_FOLDER"
+        ticket="$feature_id"
+    fi
+
+    # Build paths
+    feature_dir="${repo_root}/${SPECKIT_SPECS_ROOT}/${folder}/${ticket}"
+    branch_name="${folder}/${ticket}"
+
+    # Output pipe-separated values
+    echo "${folder}|${ticket}|${feature_dir}|${branch_name}"
+    return 0
+}
+
 # Run validation hook if configured
 # Arguments: prefix, number, folder, [phase]
 run_validation_hook() {

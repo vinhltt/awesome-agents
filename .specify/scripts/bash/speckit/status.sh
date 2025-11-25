@@ -13,7 +13,7 @@ set -e  # Exit on error
 
 # Source environment configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/common-env.sh" 2>/dev/null || {
+source "$SCRIPT_DIR/../common-env.sh" 2>/dev/null || {
     echo "ERROR: Failed to load common-env.sh" >&2
     exit 1
 }

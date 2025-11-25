@@ -11,6 +11,48 @@ $ARGUMENTS
 You **MUST** consider the user input before proceeding (if not empty).
 
 ## Outline
+### Step 0: Validate Task ID
+
+**CRITICAL**: Check task ID argument FIRST before any operations.
+**NOTE**: Users must create feature branch manually before running this command.
+
+1. **Parse user input**:
+   - Extract first argument from command
+   - Expected format: `[folder/]prefix-number`
+
+2. **Check if task ID provided**:
+   ```
+   If first argument is EMPTY or MISSING:
+     ERROR: "Task ID required. Usage: /speckit.implement {task-id}"
+     STOP - Do NOT proceed to Step 1
+   ```
+
+3. **Validate task ID format**:
+   - Must match pattern: `[folder/]{prefix}-number`
+   - `{prefix}` = value from `.speckit.env` SPECKIT_PREFIX_LIST
+   - Examples (assuming prefix=pref):
+     - ✅ `/speckit.implement {prefix}-001` → e.g., `pref-001`
+     - ✅ `/speckit.implement hotfix/{prefix}-123` → e.g., `hotfix/pref-123`
+     - ✅ `/speckit.implement AL-991` → if AL in SPECKIT_PREFIX_LIST
+     - ❌ `/speckit.implement` → ERROR (no task ID)
+     - ❌ `/speckit.implement invalid-id` → ERROR (invalid format)
+
+4. **Determine feature directory**:
+   - Pattern: `.specify/{folder}/{prefix}-number/`
+   - Default folder: `features` (from SPECKIT_DEFAULT_FOLDER)
+   - Examples (assuming prefix=pref):
+     - `{prefix}-001` → `.specify/features/pref-001/`
+     - `hotfix/{prefix}-123` → `.specify/hotfix/pref-123/`
+
+**Error Handling**:
+- If task ID missing → ERROR with usage example, STOP
+- If task ID invalid format → ERROR with format requirements, STOP
+- If feature directory not found → ERROR, suggest running `/speckit.specify` first
+
+**After Validation**:
+- Proceed to Step 1 only if task ID valid
+- Use task ID to locate feature files in `.specify/{folder}/{task-id}/`
+
 
 1. Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 

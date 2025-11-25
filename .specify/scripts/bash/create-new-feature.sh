@@ -8,6 +8,10 @@ source "$SCRIPT_DIR/common-env.sh" 2>/dev/null || {
     echo "ERROR: Failed to load common-env.sh" >&2
     exit 1
 }
+source "$SCRIPT_DIR/common.sh" 2>/dev/null || {
+    echo "ERROR: Failed to load common.sh" >&2
+    exit 1
+}
 
 JSON_MODE=false
 TICKET_ID=""
@@ -145,14 +149,12 @@ if ! run_validation_hook "$prefix" "$number" "$folder" "create"; then
 fi
 
 # Set branch and folder names
+# Note: For simple parsing without validation, use parse_feature_id() from common-env.sh
 BRANCH_NAME="$folder/$TICKET_IDENTIFIER"
 FOLDER_NAME="$TICKET_IDENTIFIER"
 
-if [ "$HAS_GIT" = true ]; then
-    git checkout -b "$BRANCH_NAME" "$SPECKIT_MAIN_BRANCH"
-else
-    >&2 echo "[specify] Warning: Git repository not detected; skipped branch creation for $BRANCH_NAME"
-fi
+# Create branch (force mode - no interactive prompts)
+create_or_switch_branch "$BRANCH_NAME" --force
 
 FEATURE_DIR="$SPECS_DIR/$FOLDER_NAME"
 mkdir -p "$FEATURE_DIR"

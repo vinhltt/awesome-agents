@@ -14,6 +14,48 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 You are updating the project constitution at `.specify/memory/constitution.md`. This file is a TEMPLATE containing placeholder tokens in square brackets (e.g. `[PROJECT_NAME]`, `[PRINCIPLE_1_NAME]`). Your job is to (a) collect/derive concrete values, (b) fill the template precisely, and (c) propagate any amendments across dependent artifacts.
 
+### Step 0: Validate Task ID
+
+**CRITICAL**: Check task ID argument FIRST before any operations.
+**NOTE**: Users must create feature branch manually before running this command.
+
+1. **Parse user input**:
+   - Extract first argument from command
+   - Expected format: `[folder/]prefix-number`
+
+2. **Check if task ID provided**:
+   ```
+   If first argument is EMPTY or MISSING:
+     ERROR: "Task ID required. Usage: /speckit.constitution {task-id}"
+     STOP - Do NOT proceed to Step 1
+   ```
+
+3. **Validate task ID format**:
+   - Must match pattern: `[folder/]{prefix}-number`
+   - `{prefix}` = value from `.speckit.env` SPECKIT_PREFIX_LIST
+   - Examples (assuming prefix=pref):
+     - ✅ `/speckit.constitution {prefix}-001` → e.g., `pref-001`
+     - ✅ `/speckit.constitution hotfix/{prefix}-123` → e.g., `hotfix/pref-123`
+     - ✅ `/speckit.constitution AL-991` → if AL in SPECKIT_PREFIX_LIST
+     - ❌ `/speckit.constitution` → ERROR (no task ID)
+     - ❌ `/speckit.constitution invalid-id` → ERROR (invalid format)
+
+4. **Determine feature directory**:
+   - Pattern: `.specify/{folder}/{prefix}-number/`
+   - Default folder: `features` (from SPECKIT_DEFAULT_FOLDER)
+   - Examples (assuming prefix=pref):
+     - `{prefix}-001` → `.specify/features/pref-001/`
+     - `hotfix/{prefix}-123` → `.specify/hotfix/pref-123/`
+
+**Error Handling**:
+- If task ID missing → ERROR with usage example, STOP
+- If task ID invalid format → ERROR with format requirements, STOP
+- If feature directory not found → ERROR, suggest running `/speckit.specify` first
+
+**After Validation**:
+- Proceed to Step 1 only if task ID valid
+- Use task ID to locate feature files in `.specify/{folder}/{task-id}/`
+
 Follow this execution flow:
 
 1. Load the existing constitution template at `.specify/memory/constitution.md`.

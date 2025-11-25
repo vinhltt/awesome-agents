@@ -12,77 +12,40 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Outline
 
-## Execution Steps
+The text the user typed after `/speckit.specify` in the triggering message **is** the feature description. Assume you always have it available in this conversation even if `$ARGUMENTS` appears literally below. Do not ask the user to repeat it unless they provided an empty command.
 
-### Step 0: Validate Task ID and Execute Script
+Given that feature description, do this:
 
-**CRITICAL**: This step MUST complete before any other operations.
-**NOTE**: Users must create feature branch manually BEFORE running this command.
+1. **Execute the Creation Script**:
 
-1. **Validate Task ID**:
-   - Extract first argument from user input
-   - Expected format: `[folder/]prefix-number`
-   - Examples: `aa-001`, `hotfix/aa-123`, `AL-991`
+   a. **Validate User Input**:
+      - The first argument after `/speckit.specify` **MUST** match the pattern `aa-###` where ### is a number (e.g., `aa-123`, `aa-001`).
+      - The command format should be: `/speckit.specify aa-### [description]`
+      - If the format is incorrect or the `aa-###` pattern is not provided, you **MUST** inform the user with the correct format and stop.
+      - Example valid input: `/speckit.specify aa-123 "Implement user authentication"`
+      - Example invalid input: `/speckit.specify 123 "description"` (missing `aa-` prefix)
 
-2. **Check if task ID provided**:
-   ```
-   If first argument is EMPTY or MISSING:
-     ERROR: "Task ID required. Usage: /speckit.specify {task-id} {description}"
-     STOP - Do NOT proceed
-   ```
+   b. **Extract Ticket ID and Description**:
+      - Parse the first argument to extract the ticket ID (e.g., `aa-123`)
+      - The remaining arguments form the feature description
+      - Example: `/speckit.specify aa-123 "Add user authentication"` → ticket ID: `aa-123`, description: `Add user authentication`
 
-3. **Validate task ID format**:
-   - Must match pattern: `[folder/]prefix-number`
-   - Prefix must be in `.speckit.env` SPECKIT_PREFIX_LIST (default: aa)
-   - Examples:
-     - ✅ `/speckit.specify aa-001 "Add authentication"` → task ID: `aa-001`
-     - ✅ `/speckit.specify hotfix/aa-123 "Fix bug"` → task ID: `hotfix/aa-123`
-     - ✅ `/speckit.specify AL-991 "Feature X"` → task ID: `AL-991` (if AL in prefix list)
-     - ❌ `/speckit.specify "Add auth"` → ERROR (no task ID)
-     - ❌ `/speckit.specify 123 "description"` → ERROR (missing prefix)
+   c. **Run the script**:
+      - Execute `.specify/scripts/bash/create-new-feature.sh` with the ticket ID and description
+      - Example: `.specify/scripts/bash/create-new-feature.sh aa-123 "Add user authentication" --json`
+      - The script will:
+        - Create branch: `{folder}/aa-123` (default: `features/aa-123`)
+        - Create folder: `.specify/{folder}/aa-123` (default: `.specify/features/aa-123`)
+        - Create spec file at: `.specify/{folder}/aa-123/spec.md`
+        - Custom prefix example: `test/aa-123` → `.specify/test/aa-123/spec.md`
 
-4. **Check feature description**:
-   - Extract second argument onwards as description
-   - If description EMPTY or MISSING:
-     ERROR: "Description required. Usage: /speckit.specify {task-id} {description}"
+   d. **Process Output**:
+      - The script will output a JSON object containing `BRANCH_NAME`, `SPEC_FILE`, and `TICKET_ID`.
+      - Use the `SPEC_FILE` path to proceed with writing the specification
 
-5. **Manual Branch Creation Required**:
-   ```
-   User must create branch BEFORE running command:
+2. Load `.specify/templates/spec-template.md` to understand required sections.
 
-   # Default folder (features):
-   git checkout -b features/aa-001
-
-   # Custom folder (hotfix):
-   git checkout -b hotfix/aa-123
-   ```
-
-6. **Execute Script**:
-   ```bash
-   bash .specify/scripts/bash/create-new-feature.sh <task-id> <description>
-   ```
-
-   Script operations (automatic):
-   - Validates task ID format (parse_ticket_id)
-   - Checks for duplicate task IDs
-   - **Warns if current branch doesn't match expected** (non-blocking)
-   - Creates feature directory: `.specify/{folder}/{task-id}/`
-   - Copies spec template to: `.specify/{folder}/{task-id}/spec.md`
-   - Returns JSON: `EXPECTED_BRANCH`, `CURRENT_BRANCH`, `SPEC_FILE`, `TICKET_ID`
-
-7. **Process Script Output**:
-   - Parse JSON output from script
-   - Extract `SPEC_FILE` path for AI processing
-   - Note: Branch mismatch warning (if any) is informational only
-   - If script fails → ERROR with script output, STOP
-
-**After Validation**:
-- Proceed to load spec template
-- Use `SPEC_FILE` path to write specification
-
-### Step 1: Load `.specify/templates/spec-template.md` to understand required sections.
-
-### Step 2: Follow Specification Generation Flow:
+3. Follow this execution flow:
 
     1. Parse user description from Input
        If empty: ERROR "No feature description provided"
