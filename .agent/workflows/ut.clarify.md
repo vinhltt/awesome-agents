@@ -1,4 +1,6 @@
-# Command: /ut.clarify
+---
+
+---
 
 ## ⛔ CRITICAL: Error Handling
 
@@ -14,6 +16,8 @@
 - Continue with partial results
 
 ---
+
+# Command: /ut.clarify
 
 **Purpose**: Add, remove, or update files in the unit test scope for a feature.
 
@@ -49,7 +53,7 @@ This command helps developers control which files should be included in unit tes
 - `--reset`: Reset to auto-detect mode (all files)
 - `--exclude <pattern>`: Add exclusion pattern (glob)
 
-### Examples (assuming prefix=pref)
+### Examples
 ```bash
 # Add a single file
 /ut.clarify pref-2 --add-file src/validator.js
@@ -370,7 +374,7 @@ Test validator.js functionality:
 ⚠️  Scope changed. Coverage report may be outdated.
 
 Recommendation:
-  Run /ut.analyze aa-2 to update coverage with new scope
+  Run /ut.analyze pref-2 to update coverage with new scope
 ```
 
 **Do NOT auto-rerun /ut.analyze** (user may not want it yet)
@@ -384,8 +388,8 @@ Recommendation:
 ⚠️  Scope changed. Test plan may be outdated.
 
 Recommendation:
-  1. Run /ut.analyze aa-2 (update coverage)
-  2. Run /ut.plan aa-2 (update test plan)
+  1. Run /ut.analyze pref-2 (update coverage)
+  2. Run /ut.plan pref-2 (update test plan)
 ```
 
 ---
@@ -554,7 +558,7 @@ Result: mode=auto, includes=[]
 
 **Behavior**:
 ```bash
-/ut.clarify aa-2 --add-file src/calc.js --remove-file src/calc.js
+/ut.clarify pref-2 --add-file src/calc.js --remove-file src/calc.js
 
 Error: Conflicting actions for 'src/calc.js'
   • --add-file: include file
@@ -571,7 +575,7 @@ Choose one action per file.
 
 **Behavior**:
 ```bash
-/ut.clarify aa-2 --add-file src/calc.js --add-file src/calc.js
+/ut.clarify pref-2 --add-file src/calc.js --add-file src/calc.js
 
 ⚠️  File 'src/calc.js' already in scope
     Skipping duplicate
@@ -782,7 +786,7 @@ Before marking this command complete, test:
 
 Potential improvements for v2:
 
-1. **Interactive mode**: `/ ut.clarify aa-2 --interactive`
+1. **Interactive mode**: `/ ut.clarify pref-2 --interactive`
    - Show list of files
    - User selects with checkboxes
    - Confirm and save

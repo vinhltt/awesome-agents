@@ -2,6 +2,21 @@
 description: Generate a custom checklist for the current feature based on user requirements.
 ---
 
+## ⛔ CRITICAL: Error Handling
+
+**If ANY script returns an error, you MUST:**
+1. **STOP immediately** - Do NOT attempt workarounds or auto-fixes
+2. **Report the error** - Show the exact error message to the user
+3. **Wait for user** - Ask user how to proceed before taking any action
+
+**DO NOT:**
+- Try alternative approaches when scripts fail
+- Create branches manually when script validation fails
+- Guess or assume what the user wants after an error
+- Continue with partial results
+
+---
+
 ## Checklist Purpose: "Unit Tests for English"
 
 **CRITICAL CONCEPT**: Checklists are **UNIT TESTS FOR REQUIREMENTS WRITING** - they validate the quality, clarity, and completeness of requirements in a given domain.
@@ -74,10 +89,15 @@ You **MUST** consider the user input before proceeding (if not empty).
 - Proceed to Step 1 only if task ID valid
 - Use task ID to locate feature files in `.specify/{folder}/{task-id}/`
 
+### Step 1: Setup
 
-1. **Setup**: Run `.specify/scripts/bash/check-prerequisites.sh --json` from repo root and parse JSON for FEATURE_DIR and AVAILABLE_DOCS list.
-   - All file paths must be absolute.
-   - For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+**IMPORTANT**: The task ID from Step 0 is ONLY for validation purposes. Do NOT pass it to the script below. The script derives feature directory from current branch automatically.
+
+Run `.specify/scripts/bash/check-prerequisites.sh --json` from repo root (NO task ID argument) and parse JSON for FEATURE_DIR and AVAILABLE_DOCS list.
+- **Correct**: `check-prerequisites.sh --json`
+- **WRONG**: `check-prerequisites.sh --json MRR-1427` ← Do NOT pass task ID!
+- All file paths must be absolute.
+- For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
 2. **Clarify intent (dynamic)**: Derive up to THREE initial contextual clarifying questions (no pre-baked catalog). They MUST:
    - Be generated from the user's phrasing + extracted signals from spec/plan/tasks

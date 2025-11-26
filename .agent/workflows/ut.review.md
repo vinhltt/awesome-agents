@@ -1,4 +1,6 @@
-# /ut.review - Review and Validate Generated Tests
+---
+description: Analyze generated test code for quality, completeness, and adherence to best practices. Provide actionable feedback on improvements, missing test cases, and potential issues.
+---
 
 ## ⛔ CRITICAL: Error Handling
 
@@ -14,6 +16,8 @@
 - Continue with partial results
 
 ---
+
+# /ut.review - Review and Validate Generated Tests
 
 ## Purpose
 

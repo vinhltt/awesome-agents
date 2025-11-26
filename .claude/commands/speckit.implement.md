@@ -2,6 +2,21 @@
 description: Execute the implementation plan by processing and executing all tasks defined in tasks.md
 ---
 
+## ⛔ CRITICAL: Error Handling
+
+**If ANY script returns an error, you MUST:**
+1. **STOP immediately** - Do NOT attempt workarounds or auto-fixes
+2. **Report the error** - Show the exact error message to the user
+3. **Wait for user** - Ask user how to proceed before taking any action
+
+**DO NOT:**
+- Try alternative approaches when scripts fail
+- Create branches manually when script validation fails
+- Guess or assume what the user wants after an error
+- Continue with partial results
+
+---
+
 ## User Input
 
 ```text
@@ -53,8 +68,14 @@ You **MUST** consider the user input before proceeding (if not empty).
 - Proceed to Step 1 only if task ID valid
 - Use task ID to locate feature files in `.specify/{folder}/{task-id}/`
 
+### Step 1: Setup
 
-1. Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+**IMPORTANT**: The task ID from Step 0 is ONLY for validation purposes. Do NOT pass it to the script below. The script derives feature directory from current branch automatically.
+
+Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks` from repo root (NO task ID argument) and parse FEATURE_DIR and AVAILABLE_DOCS list.
+- **Correct**: `check-prerequisites.sh --json --require-tasks --include-tasks`
+- **WRONG**: `check-prerequisites.sh --json --require-tasks --include-tasks MRR-1427` ← Do NOT pass task ID!
+- All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
 2. **Check checklists status** (if FEATURE_DIR/checklists/ exists):
    - Scan all checklist files in the checklists/ directory

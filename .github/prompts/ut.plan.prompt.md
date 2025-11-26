@@ -1,12 +1,27 @@
 # /ut.plan - Generate Test Implementation Plan
 
+## ⛔ CRITICAL: Error Handling
+
+**If ANY script returns an error, you MUST:**
+1. **STOP immediately** - Do NOT attempt workarounds or auto-fixes
+2. **Report the error** - Show the exact error message to the user
+3. **Wait for user** - Ask user how to proceed before taking any action
+
+**DO NOT:**
+- Try alternative approaches when scripts fail
+- Create branches manually when script validation fails
+- Guess or assume what the user wants after an error
+- Continue with partial results
+
+---
+
 ## Purpose
 
 Create a structured test implementation plan that defines test file organization, suite structure, mocking strategy, and step-by-step implementation tasks based on test specification and coverage analysis.
 
 ## Input
 
-- **Feature ID**: **REQUIRED** argument (e.g., `aa-2`, `AL-991`, `test/aa-123`)
+- **Feature ID**: **REQUIRED** argument (e.g., `pref-2`, `AL-991`, `test/pref-123`)
   - Format: `[folder/]prefix-number`
   - Prefix configured in `.specify/.speckit.env`
   - If missing: ERROR "Task ID required. Usage: /ut:plan {task-id}"
@@ -31,7 +46,7 @@ Creates `.specify/features/{feature-id}/test-plan.md` with:
 
 1. **Parse user input**:
    - Extract first argument from command
-   - Expected format: `[folder/]prefix-number` (e.g., `aa-991`, `AL-991`, `test/aa-123`)
+   - Expected format: `[folder/]prefix-number` (e.g., `pref-991`, `AL-991`, `test/pref-123`)
 
 2. **Check if task ID provided**:
    ```
@@ -45,10 +60,10 @@ Creates `.specify/features/{feature-id}/test-plan.md` with:
    - Prefix must be in `.specify/.speckit.env` SPECKIT_PREFIX_LIST
    - If invalid: ERROR "Invalid task ID format: '{input}'"
 
-**Examples**:
-- ✅ CORRECT: `/ut:plan aa-991`
+**Examples** (assuming prefix=pref):
+- ✅ CORRECT: `/ut:plan pref-991`
 - ✅ CORRECT: `/ut:plan AL-991`
-- ✅ CORRECT: `/ut:plan test/aa-123`
+- ✅ CORRECT: `/ut:plan test/pref-123`
 - ❌ WRONG: `/ut:plan` (no task ID)
 - ❌ WRONG: `/ut:plan create plan` (not a task ID)
 
@@ -819,7 +834,7 @@ Next step: Run /ut.generate {feature-id} to create test files
 
 ```bash
 # Generate test implementation plan
-/ut.plan aa-2
+/ut.plan pref-2
 
 # Output:
 # Loading test specification... ✓
@@ -829,9 +844,9 @@ Next step: Run /ut.generate {feature-id} to create test files
 # Planning test structure... __tests__/ directory
 # Generating implementation tasks... 25 tasks
 #
-# ✅ Test plan created: .specify/features/aa-2/test-plan.md
+# ✅ Test plan created: .specify/features/pref-2/test-plan.md
 #
-# Next step: Run /ut.generate aa-2 to create test files
+# Next step: Run /ut.generate pref-2 to create test files
 ```
 
 ## Error Handling

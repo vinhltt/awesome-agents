@@ -2,6 +2,21 @@
 description: Execute the implementation planning workflow using the plan template to generate design artifacts.
 ---
 
+## ⛔ CRITICAL: Error Handling
+
+**If ANY script returns an error, you MUST:**
+1. **STOP immediately** - Do NOT attempt workarounds or auto-fixes
+2. **Report the error** - Show the exact error message to the user
+3. **Wait for user** - Ask user how to proceed before taking any action
+
+**DO NOT:**
+- Try alternative approaches when scripts fail
+- Create branches manually when script validation fails
+- Guess or assume what the user wants after an error
+- Continue with partial results
+
+---
+
 ## User Input
 
 ```text
@@ -18,32 +33,41 @@ You **MUST** consider the user input before proceeding (if not empty).
 **NOTE**: Users must create feature branch manually before running this command.
 
 1. **Parse user input**:
-   - Task ID is OPTIONAL for this command (can derive from branch)
-   - If provided: validate format `[folder/]prefix-number`
-   - If not provided: script will derive from current branch name
+   - Extract first argument from command
+   - Expected format: `[folder/]prefix-number`
 
-2. **Validate task ID (if provided)**:
+2. **Check if task ID provided**:
    ```
-   If task ID provided AND invalid format:
-     ERROR: "Invalid task ID format. Expected: [folder/]prefix-number"
-     STOP - Do NOT proceed
+   If first argument is EMPTY or MISSING:
+     ERROR: "Task ID required. Usage: /speckit.plan {task-id}"
+     STOP - Do NOT proceed to Step 1
    ```
 
-3. **Derive from branch (if not provided)**:
-   - Script automatically detects current branch
-   - Extracts task ID from branch name (e.g., features/aa-001 → aa-001)
-   - If not on feature branch:
-     WARNING: "Not on feature branch, using current branch"
+3. **Validate task ID format**:
+   - Must match pattern: `[folder/]prefix-number`
+   - Prefix must be in `.speckit.env` SPECKIT_PREFIX_LIST (default: aa)
+   - Examples (assuming prefix=pref):
+     - ✅ `/speckit.plan pref-001` → feature ID: `pref-001`
+     - ✅ `/speckit.plan hotfix/pref-123` → feature ID: `hotfix/pref-123`
+     - ✅ `/speckit.plan AL-991` → feature ID: `AL-991` (if AL in prefix list)
+     - ❌ `/speckit.plan` → ERROR (no task ID)
+     - ❌ `/speckit.plan invalid-id` → ERROR (invalid format)
 
 4. **Determine feature directory**:
    - Pattern: `.specify/{folder}/{prefix-number}/`
-   - Validate directory exists (should have spec.md from /speckit.specify)
-   - If not found:
-     ERROR: "Feature directory not found. Run /speckit.specify first"
+   - Default folder: `features` (from SPECKIT_DEFAULT_FOLDER)
+   - Examples (assuming prefix=pref):
+     - `pref-001` → `.specify/features/pref-001/`
+     - `hotfix/pref-123` → `.specify/hotfix/pref-123/`
+
+**Error Handling**:
+- If task ID missing → ERROR with usage example, STOP
+- If task ID invalid format → ERROR with format requirements, STOP
+- If feature directory not found → ERROR, suggest running `/speckit.specify` first
 
 **After Validation**:
-- Proceed to execute setup-plan.sh
-- Script handles task ID extraction and path resolution
+- Proceed to Step 1 only if task ID valid
+- Use task ID to locate feature files in `.specify/{folder}/{task-id}/`
 
 ### Step 1: Setup
 

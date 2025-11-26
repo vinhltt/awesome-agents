@@ -37,7 +37,7 @@ load_speckit_env() {
     export SPECKIT_DEFAULT_FOLDER="${SPECKIT_DEFAULT_FOLDER:-features}"
     export SPECKIT_MAIN_BRANCH="${SPECKIT_MAIN_BRANCH:-master}"
     export SPECKIT_SPECS_ROOT="${SPECKIT_SPECS_ROOT:-.specify}"
-    export SPECKIT_TICKET_FORMAT="${SPECKIT_TICKET_FORMAT:-^([a-z]+/)?([a-z]+)-([0-9]+)$}"
+    export SPECKIT_TICKET_FORMAT="${SPECKIT_TICKET_FORMAT:-^([a-zA-Z]+/)?([a-zA-Z]+)-([0-9]+)$}"
     export SPECKIT_HOOK_TIMEOUT="${SPECKIT_HOOK_TIMEOUT:-30}"
     export SPECKIT_HOOK_FAIL_BEHAVIOR="${SPECKIT_HOOK_FAIL_BEHAVIOR:-exit}"
 

@@ -1,5 +1,20 @@
 # Command: /ut.clarify
 
+## ⛔ CRITICAL: Error Handling
+
+**If ANY script returns an error, you MUST:**
+1. **STOP immediately** - Do NOT attempt workarounds or auto-fixes
+2. **Report the error** - Show the exact error message to the user
+3. **Wait for user** - Ask user how to proceed before taking any action
+
+**DO NOT:**
+- Try alternative approaches when scripts fail
+- Create branches manually when script validation fails
+- Guess or assume what the user wants after an error
+- Continue with partial results
+
+---
+
 **Purpose**: Add, remove, or update files in the unit test scope for a feature.
 
 **Command Pattern**: `/ut.clarify <feature-id> [options]`
@@ -21,7 +36,7 @@ This command helps developers control which files should be included in unit tes
 ## Input Requirements
 
 ### Required Arguments
-- `<feature-id>`: **REQUIRED** argument (e.g., `aa-2`, `AL-991`, `test/aa-123`)
+- `<feature-id>`: **REQUIRED** argument (e.g., `pref-2`, `AL-991`, `test/pref-123`)
   - Format: `[folder/]prefix-number`
   - Prefix configured in `.specify/.speckit.env`
   - If missing: ERROR "Task ID required. Usage: /ut:clarify {task-id}"
@@ -37,25 +52,25 @@ This command helps developers control which files should be included in unit tes
 ### Examples
 ```bash
 # Add a single file
-/ut.clarify aa-2 --add-file src/validator.js
+/ut.clarify pref-2 --add-file src/validator.js
 
 # Add multiple files
-/ut.clarify aa-2 --add-file src/validator.js --add-file src/formatter.js
+/ut.clarify pref-2 --add-file src/validator.js --add-file src/formatter.js
 
 # Remove a file
-/ut.clarify aa-2 --remove-file src/deprecated.js
+/ut.clarify pref-2 --remove-file src/deprecated.js
 
 # Set explicit scope (replaces everything)
-/ut.clarify aa-2 --set src/calculator.js,src/validator.js
+/ut.clarify pref-2 --set src/calculator.js,src/validator.js
 
 # Exclude pattern
-/ut.clarify aa-2 --exclude "src/**/*.config.js"
+/ut.clarify pref-2 --exclude "src/**/*.config.js"
 
 # Show current scope
-/ut.clarify aa-2 --list
+/ut.clarify pref-2 --list
 
 # Reset to auto-detect all files
-/ut.clarify aa-2 --reset
+/ut.clarify pref-2 --reset
 ```
 
 ---
@@ -68,7 +83,7 @@ This command helps developers control which files should be included in unit tes
 
 1. **Parse user input**:
    - Extract first argument from command
-   - Expected format: `[folder/]prefix-number` (e.g., `aa-991`, `AL-991`, `test/aa-123`)
+   - Expected format: `[folder/]prefix-number` (e.g., `pref-991`, `AL-991`, `test/pref-123`)
 
 2. **Check if task ID provided**:
    ```
@@ -82,8 +97,8 @@ This command helps developers control which files should be included in unit tes
    - Prefix must be in `.specify/.speckit.env` SPECKIT_PREFIX_LIST
    - If invalid: ERROR "Invalid task ID format: '{input}'"
 
-**Examples**:
-- ✅ CORRECT: `/ut:clarify aa-991 --add-file src/utils.ts`
+**Examples** (assuming prefix=pref):
+- ✅ CORRECT: `/ut:clarify pref-991 --add-file src/utils.ts`
 - ✅ CORRECT: `/ut:clarify AL-991 --list`
 - ❌ WRONG: `/ut:clarify --add-file src/utils.ts` (no task ID)
 
@@ -99,8 +114,8 @@ This command helps developers control which files should be included in unit tes
 
 **Error Handling**:
 ```
-Error: Feature 'aa-2' not found
-→ Run /speckit.specify aa-2 first
+Error: Feature 'pref-2' not found
+→ Run /speckit.specify pref-2 first
 
 Error: File 'src/missing.js' does not exist
 → Continue anyway? [y/N]
@@ -253,7 +268,7 @@ scope.excludes = [default test file patterns];
 
 **Output Format**:
 ```
-Test Scope for feature 'aa-2'
+Test Scope for feature 'pref-2'
 
 Mode: manual
 Included files (2):
@@ -272,8 +287,8 @@ Last updated: 2025-11-15 20:00:00
 Updated by: user
 
 Next steps:
-  • /ut.analyze aa-2  (re-analyze with new scope)
-  • /ut.plan aa-2     (re-plan tests)
+  • /ut.analyze pref-2  (re-analyze with new scope)
+  • /ut.plan pref-2     (re-plan tests)
 ```
 
 ---
@@ -355,7 +370,7 @@ Test validator.js functionality:
 ⚠️  Scope changed. Coverage report may be outdated.
 
 Recommendation:
-  Run /ut.analyze aa-2 to update coverage with new scope
+  Run /ut.analyze pref-2 to update coverage with new scope
 ```
 
 **Do NOT auto-rerun /ut.analyze** (user may not want it yet)
@@ -369,8 +384,8 @@ Recommendation:
 ⚠️  Scope changed. Test plan may be outdated.
 
 Recommendation:
-  1. Run /ut.analyze aa-2 (update coverage)
-  2. Run /ut.plan aa-2 (update test plan)
+  1. Run /ut.analyze pref-2 (update coverage)
+  2. Run /ut.plan pref-2 (update test plan)
 ```
 
 ---
@@ -379,7 +394,7 @@ Recommendation:
 
 **Output Format**:
 ```
-✅ Test scope updated for feature 'aa-2'
+✅ Test scope updated for feature 'pref-2'
 
 Changes:
   • Mode: manual
@@ -395,11 +410,11 @@ Updated artifacts:
 
 Next steps:
   1. Review updated test-spec.md
-  2. Run /ut.analyze aa-2 (update coverage for new files)
-  3. Run /ut.plan aa-2 (re-plan with new scope)
+  2. Run /ut.analyze pref-2 (update coverage for new files)
+  3. Run /ut.plan pref-2 (re-plan with new scope)
 
 Or continue workflow:
-  /ut.analyze aa-2 && /ut.plan aa-2
+  /ut.analyze pref-2 && /ut.plan pref-2
 ```
 
 **If `--list` flag**:
@@ -429,11 +444,11 @@ Before completing this command, verify:
 
 ### Error 1: Feature Not Found
 ```
-Error: Feature 'aa-2' does not exist
+Error: Feature 'pref-2' does not exist
 
 Solution:
   1. Check feature ID spelling
-  2. Run /speckit.specify aa-2 first
+  2. Run /speckit.specify pref-2 first
   3. Or use /speckit.status to list available features
 ```
 
@@ -459,7 +474,7 @@ Error: Corrupted .ut-scope.json file
 
 Solution:
   1. Backup current file: .ut-scope.json.bak
-  2. Reset scope: /ut.clarify aa-2 --reset
+  2. Reset scope: /ut.clarify pref-2 --reset
   3. Re-add files manually
 ```
 
@@ -486,8 +501,8 @@ Options:
   --exclude <pattern>    Add exclusion pattern
 
 Examples:
-  /ut.clarify aa-2 --add-file src/validator.js
-  /ut.clarify aa-2 --list
+  /ut.clarify pref-2 --add-file src/validator.js
+  /ut.clarify pref-2 --list
 ```
 
 ---
@@ -539,7 +554,7 @@ Result: mode=auto, includes=[]
 
 **Behavior**:
 ```bash
-/ut.clarify aa-2 --add-file src/calc.js --remove-file src/calc.js
+/ut.clarify pref-2 --add-file src/calc.js --remove-file src/calc.js
 
 Error: Conflicting actions for 'src/calc.js'
   • --add-file: include file
@@ -556,7 +571,7 @@ Choose one action per file.
 
 **Behavior**:
 ```bash
-/ut.clarify aa-2 --add-file src/calc.js --add-file src/calc.js
+/ut.clarify pref-2 --add-file src/calc.js --add-file src/calc.js
 
 ⚠️  File 'src/calc.js' already in scope
     Skipping duplicate
@@ -636,19 +651,19 @@ if (scopeFile exists) {
 
 ```bash
 # Start with one file
-/ut.specify aa-2
-/ut.clarify aa-2 --set src/calculator.js
-/ut.analyze aa-2
-/ut.plan aa-2
-/ut.generate aa-2
-/ut.run aa-2
+/ut.specify pref-2
+/ut.clarify pref-2 --set src/calculator.js
+/ut.analyze pref-2
+/ut.plan pref-2
+/ut.generate pref-2
+/ut.run pref-2
 
 # Tests pass, add next file
-/ut.clarify aa-2 --add-file src/validator.js
-/ut.analyze aa-2
-/ut.plan aa-2
-/ut.generate aa-2
-/ut.run aa-2
+/ut.clarify pref-2 --add-file src/validator.js
+/ut.analyze pref-2
+/ut.plan pref-2
+/ut.generate pref-2
+/ut.run pref-2
 
 # Continue incrementally...
 ```
@@ -661,18 +676,18 @@ if (scopeFile exists) {
 
 ```bash
 # Original workflow
-/ut.specify aa-2
-/ut.analyze aa-2   # Only found calculator.js
-/ut.plan aa-2
-/ut.generate aa-2
+/ut.specify pref-2
+/ut.analyze pref-2   # Only found calculator.js
+/ut.plan pref-2
+/ut.generate pref-2
 
 # Realize: need validator.js too
-/ut.clarify aa-2 --add-file src/validator.js
+/ut.clarify pref-2 --add-file src/validator.js
 
 # Re-run from analyze
-/ut.analyze aa-2   # Now includes validator.js
-/ut.plan aa-2      # Plan updated
-/ut.generate aa-2  # Generate for validator.js
+/ut.analyze pref-2   # Now includes validator.js
+/ut.plan pref-2      # Plan updated
+/ut.generate pref-2  # Generate for validator.js
 ```
 
 ---
@@ -682,10 +697,10 @@ if (scopeFile exists) {
 **Scenario**: Project has legacy code that shouldn't be tested
 
 ```bash
-/ut.clarify aa-2 --exclude "src/legacy/**/*.js"
-/ut.clarify aa-2 --exclude "src/**/*.deprecated.js"
+/ut.clarify pref-2 --exclude "src/legacy/**/*.js"
+/ut.clarify pref-2 --exclude "src/**/*.deprecated.js"
 
-/ut.analyze aa-2  # Skips excluded files
+/ut.analyze pref-2  # Skips excluded files
 ```
 
 ---
@@ -695,7 +710,7 @@ if (scopeFile exists) {
 **Scenario**: Unsure what's currently in scope
 
 ```bash
-/ut.clarify aa-2 --list
+/ut.clarify pref-2 --list
 
 # Output:
 # Mode: manual
@@ -710,7 +725,7 @@ if (scopeFile exists) {
 **Scenario**: Manual scope got messy, start over
 
 ```bash
-/ut.clarify aa-2 --reset
+/ut.clarify pref-2 --reset
 
 # Output:
 # ✅ Scope reset to auto mode
@@ -767,7 +782,7 @@ Before marking this command complete, test:
 
 Potential improvements for v2:
 
-1. **Interactive mode**: `/ ut.clarify aa-2 --interactive`
+1. **Interactive mode**: `/ ut.clarify pref-2 --interactive`
    - Show list of files
    - User selects with checkboxes
    - Confirm and save

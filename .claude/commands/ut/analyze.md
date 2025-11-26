@@ -1,12 +1,27 @@
 # /ut.analyze - Analyze Codebase for Test Gaps
 
+## ⛔ CRITICAL: Error Handling
+
+**If ANY script returns an error, you MUST:**
+1. **STOP immediately** - Do NOT attempt workarounds or auto-fixes
+2. **Report the error** - Show the exact error message to the user
+3. **Wait for user** - Ask user how to proceed before taking any action
+
+**DO NOT:**
+- Try alternative approaches when scripts fail
+- Create branches manually when script validation fails
+- Guess or assume what the user wants after an error
+- Continue with partial results
+
+---
+
 ## Purpose
 
 Analyze a codebase to identify untested code, detect existing test patterns, and generate a coverage report showing which functions, methods, and modules lack unit tests.
 
 ## Input
 
-- **Feature ID**: **REQUIRED** argument (e.g., `aa-2`, `AL-991`, `test/aa-123`)
+- **Feature ID**: **REQUIRED** argument (e.g., `pref-2`, `AL-991`, `test/pref-123`)
   - Format: `[folder/]prefix-number`
   - Prefix configured in `.specify/.speckit.env`
   - If missing: ERROR "Task ID required. Usage: /ut:analyze {task-id}"
@@ -31,7 +46,7 @@ Creates `.specify/features/{feature-id}/coverage-report.json` with:
 
 1. **Parse user input**:
    - Extract first argument from command
-   - Expected format: `[folder/]prefix-number` (e.g., `aa-991`, `AL-991`, `test/aa-123`)
+   - Expected format: `[folder/]prefix-number` (e.g., `pref-991`, `AL-991`, `test/pref-123`)
 
 2. **Check if task ID provided**:
    ```
@@ -45,10 +60,10 @@ Creates `.specify/features/{feature-id}/coverage-report.json` with:
    - Prefix must be in `.specify/.speckit.env` SPECKIT_PREFIX_LIST
    - If invalid: ERROR "Invalid task ID format: '{input}'"
 
-**Examples**:
-- ✅ CORRECT: `/ut:analyze aa-991`
+**Examples** (assuming prefix=pref):
+- ✅ CORRECT: `/ut:analyze pref-991`
 - ✅ CORRECT: `/ut:analyze AL-991`
-- ✅ CORRECT: `/ut:analyze test/aa-123`
+- ✅ CORRECT: `/ut:analyze test/pref-123`
 - ❌ WRONG: `/ut:analyze` (no task ID)
 - ❌ WRONG: `/ut:analyze create analysis` (not a task ID)
 
@@ -232,7 +247,7 @@ Create comprehensive JSON report:
 ```json
 {
   "metadata": {
-    "featureId": "aa-2",
+    "featureId": "pref-2",
     "analyzedDate": "2025-11-14T10:30:00Z",
     "analyzer": "ut-analyze v1.0"
   },
@@ -324,9 +339,9 @@ High Priority Gaps: 5
   - exportData (src/export.ts:15)
   - hashPassword (src/auth.ts:80)
 
-✅ Coverage report saved: .specify/features/aa-2/coverage-report.json
+✅ Coverage report saved: .specify/features/pref-2/coverage-report.json
 
-Next step: Run /ut.plan aa-2 to create test implementation plan
+Next step: Run /ut.plan pref-2 to create test implementation plan
 ```
 
 ### Step 10: Handle Edge Cases
@@ -358,8 +373,8 @@ Next step: Run /ut.plan aa-2 to create test implementation plan
 ## Example Usage
 
 ```bash
-# Analyze codebase for feature aa-2
-/ut.analyze aa-2
+# Analyze codebase for feature pref-2
+/ut.analyze pref-2
 
 # Output:
 # Detecting programming language... TypeScript
@@ -368,7 +383,7 @@ Next step: Run /ut.plan aa-2 to create test implementation plan
 # Identifying testable units... 45 units found
 # Locating existing tests... 28 units have tests
 #
-# ✅ Coverage report saved: .specify/features/aa-2/coverage-report.json
+# ✅ Coverage report saved: .specify/features/pref-2/coverage-report.json
 # High priority gaps: 5 functions need tests
 ```
 

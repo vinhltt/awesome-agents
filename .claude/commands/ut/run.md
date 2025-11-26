@@ -1,12 +1,27 @@
 # /ut.run - Execute Tests and Analyze Results
 
+## ⛔ CRITICAL: Error Handling
+
+**If ANY script returns an error, you MUST:**
+1. **STOP immediately** - Do NOT attempt workarounds or auto-fixes
+2. **Report the error** - Show the exact error message to the user
+3. **Wait for user** - Ask user how to proceed before taking any action
+
+**DO NOT:**
+- Try alternative approaches when scripts fail
+- Create branches manually when script validation fails
+- Guess or assume what the user wants after an error
+- Continue with partial results
+
+---
+
 ## Purpose
 
 Execute generated unit tests and provide detailed analysis of results including pass/fail status, coverage metrics, and actionable suggestions for fixing failures.
 
 ## Input
 
-- **Feature ID**: **REQUIRED** argument (e.g., `aa-2`, `AL-991`, `test/aa-123`)
+- **Feature ID**: **REQUIRED** argument (e.g., `pref-2`, `AL-991`, `test/pref-123`)
   - Format: `[folder/]prefix-number`
   - Prefix configured in `.specify/.speckit.env`
   - If missing: ERROR "Task ID required. Usage: /ut:run {task-id}"
@@ -33,7 +48,7 @@ Creates `.specify/features/{feature-id}/test-results.md` with:
 
 1. **Parse user input**:
    - Extract first argument from command
-   - Expected format: `[folder/]prefix-number` (e.g., `aa-991`, `AL-991`, `test/aa-123`)
+   - Expected format: `[folder/]prefix-number` (e.g., `pref-991`, `AL-991`, `test/pref-123`)
 
 2. **Check if task ID provided**:
    ```
@@ -47,8 +62,8 @@ Creates `.specify/features/{feature-id}/test-results.md` with:
    - Prefix must be in `.specify/.speckit.env` SPECKIT_PREFIX_LIST
    - If invalid: ERROR "Invalid task ID format: '{input}'"
 
-**Examples**:
-- ✅ CORRECT: `/ut:run aa-991`
+**Examples** (assuming prefix=pref):
+- ✅ CORRECT: `/ut:run pref-991`
 - ✅ CORRECT: `/ut:run AL-991`
 - ❌ WRONG: `/ut:run` (no task ID)
 
@@ -525,17 +540,17 @@ it('should handle payment gateway timeout', async () => {
 
 **Run tests again**:
 ```bash
-/ut.run aa-2
+/ut.run pref-2
 ```
 
 **Review test quality**:
 ```bash
-/ut.review aa-2
+/ut.review pref-2
 ```
 
 **Update test spec**:
 ```bash
-/ut.specify aa-2
+/ut.specify pref-2
 ```
 ```
 
@@ -571,7 +586,7 @@ Failed Tests:
   1. calculator.test.ts:25 - Missing zero-check
   2. payment.test.ts:42 - Timeout mock not configured
 
-Detailed report: .specify/features/aa-2/test-results.md
+Detailed report: .specify/features/pref-2/test-results.md
 
 Next: Fix 2 failing tests (estimated 7 minutes)
 ```
@@ -608,7 +623,7 @@ Duration: 2.5s
 
 ✅ No issues found
 
-Report: .specify/features/aa-2/test-results.md
+Report: .specify/features/pref-2/test-results.md
 ```
 
 ## Quality Checklist
@@ -628,7 +643,7 @@ Report: .specify/features/aa-2/test-results.md
 
 ```bash
 # Execute tests for feature aa-2
-/ut.run aa-2
+/ut.run pref-2
 
 # Output:
 # Detecting framework... Jest 29.7.0

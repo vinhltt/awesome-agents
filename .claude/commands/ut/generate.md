@@ -1,12 +1,27 @@
 # /ut.generate - Generate Unit Test Code
 
+## ⛔ CRITICAL: Error Handling
+
+**If ANY script returns an error, you MUST:**
+1. **STOP immediately** - Do NOT attempt workarounds or auto-fixes
+2. **Report the error** - Show the exact error message to the user
+3. **Wait for user** - Ask user how to proceed before taking any action
+
+**DO NOT:**
+- Try alternative approaches when scripts fail
+- Create branches manually when script validation fails
+- Guess or assume what the user wants after an error
+- Continue with partial results
+
+---
+
 ## Purpose
 
 Generate executable unit test code based on the test implementation plan. Creates test files with test cases, assertions, mocks, and fixtures following project conventions and framework syntax.
 
 ## Input
 
-- **Feature ID**: **REQUIRED** argument (e.g., `aa-2`, `AL-991`, `test/aa-123`)
+- **Feature ID**: **REQUIRED** argument (e.g., `pref-2`, `AL-991`, `test/pref-123`)
   - Format: `[folder/]prefix-number`
   - Prefix configured in `.specify/.speckit.env`
   - If missing: ERROR "Task ID required. Usage: /ut:generate {task-id}"
@@ -36,7 +51,7 @@ With complete test suites including:
 
 1. **Parse user input**:
    - Extract first argument from command
-   - Expected format: `[folder/]prefix-number` (e.g., `aa-991`, `AL-991`, `test/aa-123`)
+   - Expected format: `[folder/]prefix-number` (e.g., `pref-991`, `AL-991`, `test/pref-123`)
 
 2. **Check if task ID provided**:
    ```
@@ -50,8 +65,8 @@ With complete test suites including:
    - Prefix must be in `.specify/.speckit.env` SPECKIT_PREFIX_LIST
    - If invalid: ERROR "Invalid task ID format: '{input}'"
 
-**Examples**:
-- ✅ CORRECT: `/ut:generate aa-991`
+**Examples** (assuming prefix=pref):
+- ✅ CORRECT: `/ut:generate pref-991`
 - ✅ CORRECT: `/ut:generate AL-991`
 - ❌ WRONG: `/ut:generate` (no task ID)
 
@@ -533,8 +548,8 @@ Next Steps:
 ## Example Usage
 
 ```bash
-# Generate test files for feature aa-2
-/ut.generate aa-2
+# Generate test files for feature pref-2
+/ut.generate pref-2
 
 # Output:
 # Reading test plan... ✓

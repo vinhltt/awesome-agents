@@ -1,5 +1,20 @@
 # /speckit.status - Track Workflow Progress
 
+## ⛔ CRITICAL: Error Handling
+
+**If ANY script returns an error, you MUST:**
+1. **STOP immediately** - Do NOT attempt workarounds or auto-fixes
+2. **Report the error** - Show the exact error message to the user
+3. **Wait for user** - Ask user how to proceed before taking any action
+
+**DO NOT:**
+- Try alternative approaches when scripts fail
+- Create branches manually when script validation fails
+- Guess or assume what the user wants after an error
+- Continue with partial results
+
+---
+
 ## Purpose
 
 Display comprehensive status for any SpecKit feature workflow, including:
@@ -169,11 +184,11 @@ If test-spec.md, coverage-report.json, or test-plan.md exists:
 
 5. ⏸️ Test Review (/ut.review)
    - Status: Not started
-   - Next: Run /ut.review aa-2
+   - Next: Run /ut.review pref-2
 
 6. ⏸️ Test Execution (/ut.run)
    - Status: Not started
-   - Next: Run /ut.run aa-2
+   - Next: Run /ut.run pref-2
 
 ### Progress
 Pipeline: 4/6 steps completed (67%)
@@ -228,10 +243,10 @@ git status --porcelain .specify/features/{feature-id}
 ```markdown
 ## Git Status
 
-Branch: features/aa-2 ✅
+Branch: features/pref-2 ✅
 Uncommitted Changes: 3 files
-- .specify/features/aa-2/test-spec.md (modified)
-- .specify/features/aa-2/test-plan.md (modified)
+- .specify/features/pref-2/test-spec.md (modified)
+- .specify/features/pref-2/test-plan.md (modified)
 - tests/calculator.test.ts (new file)
 ```
 
@@ -719,12 +734,12 @@ Before displaying, calculate additional metrics for intelligent recommendations:
 
 ```
 ╔══════════════════════════════════════════════════════╗
-║  SpecKit Status: Feature aa-2                        ║
+║  SpecKit Status: Feature pref-2                        ║
 ╚══════════════════════════════════════════════════════╝
 
 Feature: Unit Test Generation Command Flow
-Location: .specify/features/aa-2
-Branch: features/aa-2 ✅
+Location: .specify/features/pref-2
+Branch: features/pref-2 ✅
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📋 SpecKit Default Workflow
@@ -761,10 +776,10 @@ Pipeline Status:
      Total Tests: 19
 
   5. ⏸️ Test Review            Not started
-     → Run: /ut.review aa-2
+     → Run: /ut.review pref-2
 
   6. ⏸️ Test Execution         Not started
-     → Run: /ut.run aa-2
+     → Run: /ut.run pref-2
 
 Progress:
   Pipeline: 4/6 steps completed (67%)
@@ -778,7 +793,7 @@ State: Tests Generated, Ready for Review
 Overall Progress: 65% complete
 
 Git Status:
-  Branch: features/aa-2 ✅
+  Branch: features/pref-2 ✅
   Uncommitted: 3 files modified
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -786,7 +801,7 @@ Git Status:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Primary Recommendation:
-  → /ut.review aa-2
+  → /ut.review pref-2
 
 Why this step:
   • Tests have been generated (19 tests across 3 files)
@@ -803,7 +818,7 @@ What it will do:
 
 After this step:
   → Address any quality issues identified in review
-  → /ut.run aa-2 (execute tests and verify functionality)
+  → /ut.run pref-2 (execute tests and verify functionality)
 
 Generated Tests Summary:
   • Test files: 3
@@ -816,17 +831,17 @@ Generated Tests Summary:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Option A: Skip review and run tests directly
-  → /ut.run aa-2
+  → /ut.run pref-2
   ⚠️  Not recommended: May miss quality issues
   When to use: Quick validation, already confident in test quality
 
 Option B: Continue SpecKit implementation
-  → /speckit.implement aa-2
+  → /speckit.implement pref-2
   When to use: Want to implement more features before testing
   Note: 18 tasks remaining (37% incomplete)
 
 Option C: Refine test specification
-  → /ut.specify aa-2
+  → /ut.specify pref-2
   When to use: Need to add more test scenarios
   Note: Will update existing test-spec.md
 
@@ -834,7 +849,7 @@ Option C: Refine test specification
 💡 Tips
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-- Run /speckit.status aa-2 anytime to check progress
+- Run /speckit.status pref-2 anytime to check progress
 - Both workflows can run independently or together
 - TDD approach: Complete UT workflow before implementation
 - Traditional approach: Implement first, then generate tests
@@ -850,11 +865,11 @@ Based on detected state, add relevant warnings or tips:
 
   • spec.md: Modified 14 days ago
     Consider: Review and update if requirements changed
-    → /speckit.specify aa-2
+    → /speckit.specify pref-2
 
   • test-spec.md: Modified 10 days ago  
     If spec.md was updated, regenerate tests
-    → /ut.specify aa-2
+    → /ut.specify pref-2
 ```
 
 **Missing Prerequisites**:
@@ -866,9 +881,9 @@ Based on detected state, add relevant warnings or tips:
     ❌ Source code files (required)
 
   Action required:
-    1. Create specification: /speckit.specify aa-2
-    2. Implement code: /speckit.implement aa-2
-    3. Then run: /ut.analyze aa-2
+    1. Create specification: /speckit.specify pref-2
+    2. Implement code: /speckit.implement pref-2
+    3. Then run: /ut.analyze pref-2
 ```
 
 **Workflow Imbalance**:
@@ -879,9 +894,9 @@ Based on detected state, add relevant warnings or tips:
   UT Progress: 15% (Only test-spec created)
 
   Recommendation: Catch up on testing
-    → /ut.analyze aa-2
-    → /ut.plan aa-2
-    → /ut.generate aa-2
+    → /ut.analyze pref-2
+    → /ut.plan pref-2
+    → /ut.generate pref-2
 
   Why: Ensures code is testable before completion
 ```
@@ -896,7 +911,7 @@ Based on detected state, add relevant warnings or tips:
   Priority Action:
     → Review test-results.md for failure details
     → Fix failing tests before continuing
-    → Re-run: /ut.run aa-2
+    → Re-run: /ut.run pref-2
 
   Common fixes:
     • Update mocks if API changed
@@ -908,23 +923,23 @@ Based on detected state, add relevant warnings or tips:
 
 **Feature not found**:
 ```
-❌ Feature 'aa-2' not found
+❌ Feature 'pref-2' not found
 
 Available features:
   - aa-1 (Awesome Agent Workflow)
   - aa-3 (Code Review Assistant)
 
 Create new feature:
-  → /speckit.specify aa-2
+  → /speckit.specify pref-2
 ```
 
 **Empty feature directory**:
 ```
-⚠️  Feature 'aa-2' exists but has no artifacts
+⚠️  Feature 'pref-2' exists but has no artifacts
 
 Get started:
-  → /speckit.specify aa-2  (Create specification)
-  → /ut.specify aa-2       (Create test specification)
+  → /speckit.specify pref-2  (Create specification)
+  → /ut.specify pref-2       (Create test specification)
 ```
 
 **Corrupted artifact** (invalid JSON, malformed markdown):
@@ -933,7 +948,7 @@ Get started:
     Unable to parse framework information
 
 Regenerate:
-  → /ut.analyze aa-2
+  → /ut.analyze pref-2
 ```
 
 ### Step 12: Support Multiple Features
@@ -952,7 +967,7 @@ aa-1: Awesome Agent Workflow
   Progress: 100%
   Last modified: 1 week ago
 
-aa-2: Unit Test Generation Command Flow
+pref-2: Unit Test Generation Command Flow
   Status: ⏳ In Progress
   Progress: 65%
   Last modified: 1 hour ago
@@ -1003,8 +1018,8 @@ Use: /speckit.status <feature-id> for details
 ## Example Usage
 
 ```bash
-# Check status of feature aa-2
-/speckit.status aa-2
+# Check status of feature pref-2
+/speckit.status pref-2
 
 # List all features
 /speckit.status

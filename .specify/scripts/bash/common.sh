@@ -74,11 +74,19 @@ check_feature_branch() {
         return 0
     fi
 
-    # Build dynamic regex from allowed prefixes and folders
+    # Build dynamic regex from allowed prefixes and folders (case-insensitive)
     local prefix_pattern="(${SPECKIT_PREFIX_LIST//,/|})"
-    local branch_pattern="^[a-z]+/${prefix_pattern}-[0-9]+$"
+    local branch_pattern="^[a-zA-Z]+/${prefix_pattern}-[0-9]+$"
 
+    # Enable case-insensitive matching
+    shopt -s nocasematch
+    local match_result=0
     if [[ ! "$branch" =~ $branch_pattern ]]; then
+        match_result=1
+    fi
+    shopt -u nocasematch
+
+    if [[ $match_result -eq 1 ]]; then
         echo "ERROR: Not on a feature branch. Current branch: $branch" >&2
         echo "Feature branches should be named like: $SPECKIT_DEFAULT_FOLDER/prefix-number" >&2
         echo "Allowed prefixes: $SPECKIT_PREFIX_LIST" >&2

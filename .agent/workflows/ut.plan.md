@@ -1,4 +1,6 @@
-# /ut.plan - Generate Test Implementation Plan
+---
+description: Create a structured test implementation plan that defines test file organization, suite structure, mocking strategy, and step-by-step implementation tasks based on test specification and coverage analysis.
+---
 
 ## ⛔ CRITICAL: Error Handling
 
@@ -14,6 +16,8 @@
 - Continue with partial results
 
 ---
+
+# /ut.plan - Generate Test Implementation Plan
 
 ## Purpose
 
@@ -816,7 +820,7 @@ Priority Breakdown:
 
 Estimated Effort: 15-20 hours
 
-Next step: Run /ut.generate pref-2 to create test files
+Next step: Run /ut.generate {feature-id} to create test files
 ```
 
 ## Quality Checklist

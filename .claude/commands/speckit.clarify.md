@@ -2,6 +2,21 @@
 description: Identify underspecified areas in the current feature spec by asking up to 5 highly targeted clarification questions and encoding answers back into the spec.
 ---
 
+## ⛔ CRITICAL: Error Handling
+
+**If ANY script returns an error, you MUST:**
+1. **STOP immediately** - Do NOT attempt workarounds or auto-fixes
+2. **Report the error** - Show the exact error message to the user
+3. **Wait for user** - Ask user how to proceed before taking any action
+
+**DO NOT:**
+- Try alternative approaches when scripts fail
+- Create branches manually when script validation fails
+- Guess or assume what the user wants after an error
+- Continue with partial results
+
+---
+
 ## User Input
 
 ```text
@@ -58,9 +73,13 @@ Note: This clarification workflow is expected to run (and be completed) BEFORE i
 - Proceed to Step 1 only if task ID valid
 - Use task ID to locate feature files in `.specify/{folder}/{task-id}/`
 
-Execution steps:
+### Execution Steps
 
-1. Run `.specify/scripts/bash/check-prerequisites.sh --json --paths-only` from repo root **once** (combined `--json --paths-only` mode / `-Json -PathsOnly`). Parse minimal JSON payload fields:
+**IMPORTANT**: The task ID from Step 0 is ONLY for validation purposes. Do NOT pass it to the script below. The script derives feature directory from current branch automatically.
+
+1. Run `.specify/scripts/bash/check-prerequisites.sh --json --paths-only` from repo root **once** (NO task ID argument). Parse minimal JSON payload fields:
+   - **Correct**: `check-prerequisites.sh --json --paths-only`
+   - **WRONG**: `check-prerequisites.sh --json --paths-only MRR-1427` ← Do NOT pass task ID!
    - `FEATURE_DIR`
    - `FEATURE_SPEC`
    - (Optionally capture `IMPL_PLAN`, `TASKS` for future chained flows.)

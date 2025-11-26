@@ -1,12 +1,27 @@
 # /ut.specify - Create Unit Test Specification
 
+## ⛔ CRITICAL: Error Handling
+
+**If ANY script returns an error, you MUST:**
+1. **STOP immediately** - Do NOT attempt workarounds or auto-fixes
+2. **Report the error** - Show the exact error message to the user
+3. **Wait for user** - Ask user how to proceed before taking any action
+
+**DO NOT:**
+- Try alternative approaches when scripts fail
+- Create branches manually when script validation fails
+- Guess or assume what the user wants after an error
+- Continue with partial results
+
+---
+
 ## Purpose
 
 Generate a comprehensive test specification document that defines what needs to be tested for a feature. This specification will guide test implementation by identifying testable units, test scenarios, coverage goals, and mocking requirements.
 
 ## Input
 
-- **Feature ID**: Required argument (e.g., `aa-2`)
+- **Feature ID**: Required argument (e.g., `pref-2`)
 - **Feature Spec**: Reads from `.specify/features/{feature-id}/spec.md`
 - **Optional**: Existing test-spec.md for updates
 
@@ -37,10 +52,10 @@ Creates or updates `.specify/features/{feature-id}/test-spec.md` with:
        STOP - Do NOT proceed
      ```
    - Expected format: `[folder/]prefix-number`
-   - Examples:
-     - ✅ `/ut:specify aa-991 create UT for @file.ts` → feature ID: `aa-991`
+   - Examples (assuming prefix=pref):
+     - ✅ `/ut:specify pref-991 create UT for @file.ts` → feature ID: `pref-991`
      - ✅ `/ut:specify AL-991 description` → feature ID: `AL-991`
-     - ✅ `/ut:specify test/aa-123 description` → feature ID: `test/aa-123`
+     - ✅ `/ut:specify test/pref-123 description` → feature ID: `test/pref-123`
      - ❌ `/ut:specify create UT` → ERROR (no task ID)
 
 2. **Execute Script**:
@@ -57,11 +72,11 @@ Creates or updates `.specify/features/{feature-id}/test-spec.md` with:
    Examples:
    ```bash
    # Linux/macOS/Git Bash
-   bash .specify/scripts/bash/ut/specify.sh aa-991
+   bash .specify/scripts/bash/ut/specify.sh pref-991
 
    # Works with any feature ID format
    bash .specify/scripts/bash/ut/specify.sh AL-991
-   bash .specify/scripts/bash/ut/specify.sh test/aa-123
+   bash .specify/scripts/bash/ut/specify.sh test/pref-123
    ```
 
    **Windows-specific notes**:
@@ -71,8 +86,8 @@ Creates or updates `.specify/features/{feature-id}/test-spec.md` with:
    - Paths with spaces are handled automatically by Git Bash
 
 3. **Script Operations** (automatic):
-   - Validates feature directory exists at `.specify/features/aa-991/`
-   - Validates spec.md exists at `.specify/features/aa-991/spec.md`
+   - Validates feature directory exists at `.specify/features/pref-991/`
+   - Validates spec.md exists at `.specify/features/pref-991/spec.md`
    - Checks for existing test-spec.md (interactive prompt if found)
    - Outputs summary with feature ID, paths, and mode
 
@@ -598,24 +613,24 @@ Before finalizing test-spec.md, verify:
 ## Example Usage
 
 ```bash
-# Create test specification for feature aa-991
-/ut:specify aa-991
+# Create test specification for feature pref-991
+/ut:specify pref-991
 
 # Step 0: Bash script executes
 # Checking feature directory...
-# ✅ Feature directory found: .specify/features/aa-991/
-# ✅ Spec file found: .specify/features/aa-991/spec.md
-# Switched to branch 'features/aa-991'
+# ✅ Feature directory found: .specify/features/pref-991/
+# ✅ Spec file found: .specify/features/pref-991/spec.md
+# Switched to branch 'features/pref-991'
 # 📊 Test Specification Generation
 # ================================
-# Feature ID: aa-991
-# Branch: features/aa-991
+# Feature ID: pref-991
+# Branch: features/pref-991
 # ✅ Ready for AI agent processing
 
 # Step 1: Prerequisites validated
 # ✅ Feature directory exists
 # ✅ Spec file exists
-# ✅ Current branch: features/aa-991
+# ✅ Current branch: features/pref-991
 
 # Step 2: Checking for ut-rule.md...
 # Looking for: docs/rules/test/ut-rule.md
@@ -631,14 +646,14 @@ Before finalizing test-spec.md, verify:
 # Analyzing feature specification...
 # Generating test scenarios for 6 user stories...
 # Identified 24 test cases across 12 scenarios
-# ✅ Test specification created at .specify/features/aa-991/test-spec.md
+# ✅ Test specification created at .specify/features/pref-991/test-spec.md
 #
-# Next step: Run /ut:analyze aa-991 to identify test coverage gaps
+# Next step: Run /ut:analyze pref-991 to identify test coverage gaps
 ```
 
 **Subsequent runs** (ut-rule.md already exists):
 ```bash
-/ut:specify aa-992
+/ut:specify pref-992
 
 # Step 0: Branch created
 # Step 1: Prerequisites validated

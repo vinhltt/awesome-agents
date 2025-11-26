@@ -1,12 +1,27 @@
 # /ut.review - Review and Validate Generated Tests
 
+## ⛔ CRITICAL: Error Handling
+
+**If ANY script returns an error, you MUST:**
+1. **STOP immediately** - Do NOT attempt workarounds or auto-fixes
+2. **Report the error** - Show the exact error message to the user
+3. **Wait for user** - Ask user how to proceed before taking any action
+
+**DO NOT:**
+- Try alternative approaches when scripts fail
+- Create branches manually when script validation fails
+- Guess or assume what the user wants after an error
+- Continue with partial results
+
+---
+
 ## Purpose
 
 Analyze generated test code for quality, completeness, and adherence to best practices. Provide actionable feedback on improvements, missing test cases, and potential issues.
 
 ## Input
 
-- **Feature ID**: **REQUIRED** argument (e.g., `aa-2`, `AL-991`, `test/aa-123`)
+- **Feature ID**: **REQUIRED** argument (e.g., `pref-2`, `AL-991`, `test/pref-123`)
   - Format: `[folder/]prefix-number`
   - Prefix configured in `.specify/.speckit.env`
   - If missing: ERROR "Task ID required. Usage: /ut:review {task-id}"
@@ -65,7 +80,7 @@ Creates `.specify/features/{feature-id}/review-report.md` with:
 
 1. **Parse user input**:
    - Extract first argument from command
-   - Expected format: `[folder/]prefix-number` (e.g., `aa-991`, `AL-991`, `test/aa-123`)
+   - Expected format: `[folder/]prefix-number` (e.g., `pref-991`, `AL-991`, `test/pref-123`)
 
 2. **Check if task ID provided**:
    ```
@@ -79,8 +94,8 @@ Creates `.specify/features/{feature-id}/review-report.md` with:
    - Prefix must be in `.specify/.speckit.env` SPECKIT_PREFIX_LIST
    - If invalid: ERROR "Invalid task ID format: '{input}'"
 
-**Examples**:
-- ✅ CORRECT: `/ut:review aa-991`
+**Examples** (assuming prefix=pref):
+- ✅ CORRECT: `/ut:review pref-991`
 - ✅ CORRECT: `/ut:review AL-991`
 - ❌ WRONG: `/ut:review` (no task ID)
 
@@ -439,7 +454,7 @@ Issues Found:
 
 Recommendations: 10 items
 
-Report saved: .specify/features/aa-2/review-report.md
+Report saved: .specify/features/pref-2/review-report.md
 
 Next: Fix critical issues and re-run tests
 ```
@@ -461,7 +476,7 @@ Next: Fix critical issues and re-run tests
 
 ```bash
 # Review generated tests
-/ut.review aa-2
+/ut.review pref-2
 
 # Output:
 # Analyzing test files... 3 files found
@@ -474,7 +489,7 @@ Next: Fix critical issues and re-run tests
 # Overall Score: 84% ⭐⭐⭐⭐
 #
 # Critical issues: 2
-# See .specify/features/aa-2/review-report.md
+# See .specify/features/pref-2/review-report.md
 ```
 
 ## Error Handling

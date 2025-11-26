@@ -2,6 +2,21 @@
 description: Perform a non-destructive cross-artifact consistency and quality analysis across spec.md, plan.md, and tasks.md after task generation.
 ---
 
+## ⛔ CRITICAL: Error Handling
+
+**If ANY script returns an error, you MUST:**
+1. **STOP immediately** - Do NOT attempt workarounds or auto-fixes
+2. **Report the error** - Show the exact error message to the user
+3. **Wait for user** - Ask user how to proceed before taking any action
+
+**DO NOT:**
+- Try alternative approaches when scripts fail
+- Create branches manually when script validation fails
+- Guess or assume what the user wants after an error
+- Continue with partial results
+
+---
+
 ## User Input
 
 ```text
@@ -66,7 +81,13 @@ Identify inconsistencies, duplications, ambiguities, and underspecified items ac
 
 ### 1. Initialize Analysis Context
 
-Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks` once from repo root and parse JSON for FEATURE_DIR and AVAILABLE_DOCS. Derive absolute paths:
+**IMPORTANT**: The task ID from Step 0 is ONLY for validation purposes. Do NOT pass it to the script below. The script derives feature directory from current branch automatically.
+
+Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks` once from repo root (NO task ID argument) and parse JSON for FEATURE_DIR and AVAILABLE_DOCS.
+- **Correct**: `check-prerequisites.sh --json --require-tasks --include-tasks`
+- **WRONG**: `check-prerequisites.sh --json --require-tasks --include-tasks MRR-1427` ← Do NOT pass task ID!
+
+Derive absolute paths:
 
 - SPEC = FEATURE_DIR/spec.md
 - PLAN = FEATURE_DIR/plan.md
