@@ -48,6 +48,10 @@ if [ ! -f "$SPEC_FILE" ]; then
     exit 1
 fi
 
+# Create or switch to feature branch (interactive mode)
+create_or_switch_branch "$BRANCH_NAME"
+echo ""
+
 # Check if test spec already exists
 if [ -f "$TEST_SPEC_FILE" ]; then
     echo "⚠️  Test specification already exists: $TEST_SPEC_FILE"
@@ -89,6 +93,10 @@ echo ""
 echo "📊 Test Specification Generation"
 echo "================================"
 echo "Feature ID: $FEATURE_ID"
+if [ "$HAS_GIT" = true ]; then
+    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+    echo "Branch: $CURRENT_BRANCH"
+fi
 echo "Feature Spec: $SPEC_FILE"
 echo "Output: $TEST_SPEC_FILE"
 echo "Mode: $MODE"

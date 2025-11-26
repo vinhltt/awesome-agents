@@ -78,8 +78,17 @@ validate_prefix() {
     local prefix="$1"
     local allowed_prefixes="${SPECKIT_PREFIX_LIST//,/ }"
 
+    # Wildcard: allow any prefix
+    if [[ "$SPECKIT_PREFIX_LIST" == "*" ]]; then
+        return 0
+    fi
+
+    # Case-insensitive comparison
+    local prefix_lower="${prefix,,}"
+
     for allowed in $allowed_prefixes; do
-        if [[ "$prefix" == "$allowed" ]]; then
+        local allowed_lower="${allowed,,}"
+        if [[ "$prefix_lower" == "$allowed_lower" ]]; then
             return 0
         fi
     done
