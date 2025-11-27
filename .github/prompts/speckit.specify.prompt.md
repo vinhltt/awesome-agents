@@ -32,45 +32,69 @@ You **MUST** consider the user input before proceeding (if not empty).
 ### Step 0: Validate Task ID and Execute Script
 
 **CRITICAL**: This step MUST complete before any other operations.
-**NOTE**: Users must create feature branch manually BEFORE running this command.
 
-1. **Validate Task ID**:
-   - Extract first argument from user input
+1. **Parse user input**:
+   - Extract first argument = task_id
+   - Extract remaining arguments = feature description
    - Expected format: `[folder/]prefix-number`
-   - Examples (assuming prefix=pref): `pref-001`, `hotfix/pref-123`, `AL-991`
 
-2. **Check if task ID provided**:
-   ```
-   If first argument is EMPTY or MISSING:
-     ERROR: "Task ID required. Usage: /speckit.specify {task-id} {description}"
-     STOP - Do NOT proceed
-   ```
+2. **Check if task_id provided**:
 
-3. **Validate task ID format**:
-   - Must match pattern: `[folder/]prefix-number`
-   - Prefix must be in `.speckit.env` SPECKIT_PREFIX_LIST (default: aa)
-   - Examples (assuming prefix=pref):
-     - ✅ `/speckit.specify pref-001 "Add authentication"` → task ID: `pref-001`
-     - ✅ `/speckit.specify hotfix/pref-123 "Fix bug"` → task ID: `hotfix/pref-123`
-     - ✅ `/speckit.specify AL-991 "Feature X"` → task ID: `AL-991` (if AL in prefix list)
-     - ❌ `/speckit.specify "Add auth"` → ERROR (no task ID)
-     - ❌ `/speckit.specify 123 "description"` → ERROR (missing prefix)
+   **If task_id provided and valid** (matches pattern `[folder/]prefix-number`):
+   - Convert to lowercase (case-insensitive)
+   - → Check description (step 3)
 
-4. **Check feature description**:
+   **If task_id missing**:
+   - → Proceed to inference (step 4)
+
+3. **Check feature description**:
    - Extract second argument onwards as description
    - If description EMPTY or MISSING:
      ERROR: "Description required. Usage: /speckit.specify {task-id} {description}"
+   - → Proceed to Execute Script (step 6)
 
-5. **Manual Branch Creation Required**:
+4. **Infer task_id from conversation context** (only if task_id missing):
+   - Search this conversation for:
+     - Previous `/speckit.*` or `/ut.*` command executions with task_id
+     - Task_id patterns mentioned (e.g., "pref-001", "MRR-123", "aa-2")
+
+   **If context found** (e.g., "pref-001"):
+   - Use **AskUserQuestion** tool to confirm:
+     ```json
+     {
+       "questions": [{
+         "question": "No task_id provided. Use detected context 'pref-001'?",
+         "header": "Task ID",
+         "options": [
+           {"label": "Yes, use pref-001", "description": "Proceed with the detected task"},
+           {"label": "No, specify another", "description": "I'll provide a different task_id"}
+         ],
+         "multiSelect": false
+       }]
+     }
+     ```
+   - If user selects "Yes" → task_id = inferred value (lowercase)
+   - If user selects "No" → Show usage, STOP
+
+   **If NO context found**:
    ```
-   User must create branch BEFORE running command:
+   ❌ Error: task_id is required
 
-   # Default folder (features):
-   git checkout -b features/pref-001
+   Usage: /speckit.specify <task-id> <description>
+   Example: /speckit.specify pref-001 "Add user authentication"
 
-   # Custom folder (hotfix):
-   git checkout -b hotfix/pref-123
+   No previous task context found in this conversation.
    ```
+   STOP - Do NOT proceed
+
+5. **Validate task_id format**:
+   - Must match pattern: `[folder/]prefix-number`
+   - Prefix must be in `.speckit.env` SPECKIT_PREFIX_LIST
+   - Examples:
+     - ✅ `/speckit.specify pref-001 "Add auth"` → task_id: `pref-001`
+     - ✅ `/speckit.specify PREF-001 "Add auth"` → task_id: `pref-001` (case-insensitive)
+     - ✅ `/speckit.specify hotfix/pref-123 "Fix bug"` → task_id: `hotfix/pref-123`
+     - ❌ `/speckit.specify "Add auth"` → ERROR (no task ID)
 
 6. **Execute Script**:
    ```bash
@@ -79,11 +103,12 @@ You **MUST** consider the user input before proceeding (if not empty).
 
    Script operations (automatic):
    - Validates task ID format (parse_ticket_id)
+   - Converts to lowercase (case-insensitive)
    - Checks for duplicate task IDs
    - **Warns if current branch doesn't match expected** (non-blocking)
    - Creates feature directory: `.specify/{folder}/{task-id}/`
    - Copies spec template to: `.specify/{folder}/{task-id}/spec.md`
-   - Returns JSON: `EXPECTED_BRANCH`, `CURRENT_BRANCH`, `SPEC_FILE`, `TICKET_ID`
+   - Returns JSON: `TASK_ID`, `EXPECTED_BRANCH`, `CURRENT_BRANCH`, `SPEC_FILE`
 
 7. **Process Script Output**:
    - Parse JSON output from script

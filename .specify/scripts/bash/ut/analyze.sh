@@ -45,6 +45,9 @@ if [ -z "$FEATURE_ID" ]; then
     exit 1
 fi
 
+# Case-insensitive: convert feature ID to lowercase
+FEATURE_ID=$(echo "$FEATURE_ID" | tr '[:upper:]' '[:lower:]')
+
 # Set up paths using common parsing function
 parsed=$(parse_feature_id "$FEATURE_ID") || exit 1
 IFS='|' read -r FOLDER TICKET FEATURE_DIR BRANCH_NAME <<< "$parsed"

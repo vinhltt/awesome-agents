@@ -27,6 +27,9 @@ if [ -z "$FEATURE_ID" ]; then
     exit 1
 fi
 
+# Case-insensitive: convert feature ID to lowercase
+FEATURE_ID=$(echo "$FEATURE_ID" | tr '[:upper:]' '[:lower:]')
+
 # Set up paths
 REPO_ROOT=$(get_repo_root)
 

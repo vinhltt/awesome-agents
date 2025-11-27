@@ -5,7 +5,10 @@
 # This script provides unified prerequisite checking for Spec-Driven Development workflow.
 # It replaces the functionality previously spread across multiple scripts.
 #
-# Usage: ./check-prerequisites.sh [OPTIONS]
+# Usage: ./check-prerequisites.sh <task-id> [OPTIONS]
+#
+# ARGUMENTS:
+#   <task-id>           Required. The task ID (e.g., pref-001, features/aa-123)
 #
 # OPTIONS:
 #   --json              Output in JSON format
@@ -15,9 +18,9 @@
 #   --help, -h          Show help message
 #
 # OUTPUTS:
-#   JSON mode: {"FEATURE_DIR":"...", "AVAILABLE_DOCS":["..."]}
-#   Text mode: FEATURE_DIR:... \n AVAILABLE_DOCS: \n ✓/✗ file.md
-#   Paths only: REPO_ROOT: ... \n BRANCH: ... \n FEATURE_DIR: ... etc.
+#   JSON mode: {"TASK_ID":"...", "FEATURE_DIR":"...", "AVAILABLE_DOCS":["..."]}
+#   Text mode: TASK_ID:... \n FEATURE_DIR:... \n AVAILABLE_DOCS: \n ✓/✗ file.md
+#   Paths only: REPO_ROOT: ... \n TASK_ID: ... \n FEATURE_DIR: ... etc.
 
 set -e
 
@@ -26,6 +29,7 @@ JSON_MODE=false
 REQUIRE_TASKS=false
 INCLUDE_TASKS=false
 PATHS_ONLY=false
+TASK_ID=""
 
 for arg in "$@"; do
     case "$arg" in
@@ -43,9 +47,12 @@ for arg in "$@"; do
             ;;
         --help|-h)
             cat << 'EOF'
-Usage: check-prerequisites.sh [OPTIONS]
+Usage: check-prerequisites.sh <task-id> [OPTIONS]
 
 Consolidated prerequisite checking for Spec-Driven Development workflow.
+
+ARGUMENTS:
+  <task-id>           Required. The task ID (e.g., pref-001, features/aa-123)
 
 OPTIONS:
   --json              Output in JSON format
@@ -56,41 +63,52 @@ OPTIONS:
 
 EXAMPLES:
   # Check task prerequisites (plan.md required)
-  ./check-prerequisites.sh --json
-  
+  ./check-prerequisites.sh pref-001 --json
+
   # Check implementation prerequisites (plan.md + tasks.md required)
-  ./check-prerequisites.sh --json --require-tasks --include-tasks
-  
+  ./check-prerequisites.sh pref-001 --json --require-tasks --include-tasks
+
   # Get feature paths only (no validation)
-  ./check-prerequisites.sh --paths-only
-  
+  ./check-prerequisites.sh pref-001 --paths-only
+
 EOF
             exit 0
             ;;
         *)
-            echo "ERROR: Unknown option '$arg'. Use --help for usage information." >&2
-            exit 1
+            # First non-flag argument is task_id
+            if [[ -z "$TASK_ID" ]]; then
+                TASK_ID="$arg"
+            fi
             ;;
     esac
 done
+
+# Validate task_id is provided
+if [[ -z "$TASK_ID" ]]; then
+    echo "❌ Error: task_id is required" >&2
+    echo "Usage: $0 <task-id> [--json] [--require-tasks] [--include-tasks] [--paths-only]" >&2
+    echo "Example: $0 pref-001 --json" >&2
+    exit 1
+fi
 
 # Source common functions
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 
-# Get feature paths and validate branch
-eval $(get_feature_paths)
-check_feature_branch "$CURRENT_BRANCH" "$HAS_GIT" || exit 1
+# Get feature paths with explicit task_id
+eval $(get_feature_paths "$TASK_ID") || exit 1
+
+# Note: Branch check removed - parallel workflows enabled via explicit task_id
 
 # If paths-only mode, output paths and exit (support JSON + paths-only combined)
 if $PATHS_ONLY; then
     if $JSON_MODE; then
         # Minimal JSON paths payload (no validation performed)
-        printf '{"REPO_ROOT":"%s","BRANCH":"%s","FEATURE_DIR":"%s","FEATURE_SPEC":"%s","IMPL_PLAN":"%s","TASKS":"%s"}\n' \
-            "$REPO_ROOT" "$CURRENT_BRANCH" "$FEATURE_DIR" "$FEATURE_SPEC" "$IMPL_PLAN" "$TASKS"
+        printf '{"TASK_ID":"%s","REPO_ROOT":"%s","FEATURE_DIR":"%s","FEATURE_SPEC":"%s","IMPL_PLAN":"%s","TASKS":"%s"}\n' \
+            "$TASK_ID" "$REPO_ROOT" "$FEATURE_DIR" "$FEATURE_SPEC" "$IMPL_PLAN" "$TASKS"
     else
+        echo "TASK_ID: $TASK_ID"
         echo "REPO_ROOT: $REPO_ROOT"
-        echo "BRANCH: $CURRENT_BRANCH"
         echo "FEATURE_DIR: $FEATURE_DIR"
         echo "FEATURE_SPEC: $FEATURE_SPEC"
         echo "IMPL_PLAN: $IMPL_PLAN"
@@ -147,19 +165,20 @@ if $JSON_MODE; then
         json_docs=$(printf '"%s",' "${docs[@]}")
         json_docs="[${json_docs%,}]"
     fi
-    
-    printf '{"FEATURE_DIR":"%s","AVAILABLE_DOCS":%s}\n' "$FEATURE_DIR" "$json_docs"
+
+    printf '{"TASK_ID":"%s","FEATURE_DIR":"%s","AVAILABLE_DOCS":%s}\n' "$TASK_ID" "$FEATURE_DIR" "$json_docs"
 else
     # Text output
-    echo "FEATURE_DIR:$FEATURE_DIR"
+    echo "TASK_ID: $TASK_ID"
+    echo "FEATURE_DIR: $FEATURE_DIR"
     echo "AVAILABLE_DOCS:"
-    
+
     # Show status of each potential document
     check_file "$RESEARCH" "research.md"
     check_file "$DATA_MODEL" "data-model.md"
     check_dir "$CONTRACTS_DIR" "contracts/"
     check_file "$QUICKSTART" "quickstart.md"
-    
+
     if $INCLUDE_TASKS; then
         check_file "$TASKS" "tasks.md"
     fi

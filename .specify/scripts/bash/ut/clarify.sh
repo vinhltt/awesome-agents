@@ -60,6 +60,9 @@ if [ -z "$FEATURE_ID" ]; then
     exit 1
 fi
 
+# Case-insensitive: convert feature ID to lowercase
+FEATURE_ID=$(echo "$FEATURE_ID" | tr '[:upper:]' '[:lower:]')
+
 # Parse options
 shift
 while [[ $# -gt 0 ]]; do

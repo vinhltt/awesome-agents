@@ -42,30 +42,74 @@ Creates `.specify/features/{feature-id}/test-results.md` with:
 
 ## Execution Instructions
 
-### Step 0: Validate Task ID
+### Step 0: Validate or Infer Task ID
 
-**CRITICAL**: Check task ID argument FIRST before any operations.
+**CRITICAL**: Handle task_id before any operations.
 
 1. **Parse user input**:
-   - Extract first argument from command
+   - Extract first argument from `$ARGUMENTS`
    - Expected format: `[folder/]prefix-number` (e.g., `pref-991`, `AL-991`, `test/pref-123`)
 
-2. **Check if task ID provided**:
-   ```
-   If first argument is EMPTY or MISSING:
-     ERROR: "Task ID required. Usage: /ut:run {task-id}"
-     STOP - Do NOT proceed to Step 1
-   ```
+2. **Check if task_id provided**:
 
-3. **Validate task ID format**:
+   **If task_id provided and valid** (matches pattern `[folder/]prefix-number`):
+   - Convert to lowercase (case-insensitive)
+   - → Proceed to Step 1 with this task_id
+
+   **If task_id missing or invalid**:
+   - → Proceed to inference (step 3)
+
+3. **Infer from conversation context** (only if task_id missing):
+   - Search this conversation for:
+     - Previous `/speckit.*` or `/ut.*` command executions with task_id
+     - Task_id patterns mentioned (e.g., "pref-001", "MRR-123", "aa-2")
+     - Output mentioning "Feature pref-001" or similar
+
+   **If context found** (e.g., "pref-001"):
+   - Use **AskUserQuestion** tool to confirm:
+     ```json
+     {
+       "questions": [{
+         "question": "No task_id provided. Use detected context 'pref-001'?",
+         "header": "Task ID",
+         "options": [
+           {"label": "Yes, use pref-001", "description": "Proceed with the detected task"},
+           {"label": "No, specify another", "description": "I'll provide a different task_id"}
+         ],
+         "multiSelect": false
+       }]
+     }
+     ```
+   - If user selects "Yes" → task_id = inferred value (lowercase), proceed to Step 1
+   - If user selects "No" → Show usage, STOP
+
+   **If NO context found**:
+   ```
+   ❌ Error: task_id is required
+
+   Usage: /ut.run <task-id>
+   Example: /ut.run pref-001
+
+   No previous task context found in this conversation.
+   ```
+   STOP - Do NOT proceed to Step 1
+
+4. **Validate task_id format**:
    - Must match pattern: `[folder/]prefix-number`
    - Prefix must be in `.specify/.speckit.env` SPECKIT_PREFIX_LIST
-   - If invalid: ERROR "Invalid task ID format: '{input}'"
+   - Examples:
+     - ✅ `/ut.run pref-991` → task_id: `pref-991`
+     - ✅ `/ut.run PREF-991` → task_id: `pref-991` (case-insensitive)
+     - ❌ `/ut.run` without context → ERROR (no task ID)
 
-**Examples** (assuming prefix=pref):
-- ✅ CORRECT: `/ut:run pref-991`
-- ✅ CORRECT: `/ut:run AL-991`
-- ❌ WRONG: `/ut:run` (no task ID)
+5. **Determine feature directory**:
+   - Pattern: `.specify/{folder}/{prefix-number}/`
+   - Default folder: `features` (from SPECKIT_DEFAULT_FOLDER)
+   - If not found → ERROR, suggest running `/ut.specify` first
+
+**After Validation**:
+- Proceed to Step 1 only if task_id valid
+- Use task_id to locate feature files
 
 ### Step 1: Detect Test Framework
 

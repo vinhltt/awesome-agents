@@ -38,25 +38,65 @@ Creates or updates `.specify/features/{feature-id}/test-spec.md` with:
 
 ## Execution Instructions
 
-### Step 0: Execute Bash Script
+### Step 0: Validate or Infer Task ID
 
-**CRITICAL**: This step MUST complete before any other operations.
-**NOTE**: Users must create feature branch manually before running this command.
+**CRITICAL**: Handle task_id before any operations.
 
-1. **Validate Task ID**:
-   - Extract first argument from user input
-   - **Check if task ID provided**:
-     ```
-     If first argument is EMPTY or MISSING:
-       ERROR: "Task ID required. Usage: /ut:specify {task-id}"
-       STOP - Do NOT proceed
-     ```
+1. **Parse user input**:
+   - Extract first argument from `$ARGUMENTS`
    - Expected format: `[folder/]prefix-number`
-   - Examples (assuming prefix=pref):
-     - ✅ `/ut:specify pref-991 create UT for @file.ts` → feature ID: `pref-991`
-     - ✅ `/ut:specify AL-991 description` → feature ID: `AL-991`
-     - ✅ `/ut:specify test/pref-123 description` → feature ID: `test/pref-123`
-     - ❌ `/ut:specify create UT` → ERROR (no task ID)
+
+2. **Check if task_id provided**:
+
+   **If task_id provided and valid** (matches pattern `[folder/]prefix-number`):
+   - Convert to lowercase (case-insensitive)
+   - → Proceed to Execute Script (step 5)
+
+   **If task_id missing or invalid**:
+   - → Proceed to inference (step 3)
+
+3. **Infer from conversation context**:
+   - Search this conversation for:
+     - Previous `/speckit.*` or `/ut.*` command executions with task_id
+     - Task_id patterns mentioned (e.g., "pref-001", "MRR-123", "aa-2")
+     - Output mentioning "Feature pref-001" or similar
+
+   **If context found** (e.g., "pref-001"):
+   - Use **AskUserQuestion** tool to confirm:
+     ```json
+     {
+       "questions": [{
+         "question": "No task_id provided. Use detected context 'pref-001'?",
+         "header": "Task ID",
+         "options": [
+           {"label": "Yes, use pref-001", "description": "Proceed with the detected task"},
+           {"label": "No, specify another", "description": "I'll provide a different task_id"}
+         ],
+         "multiSelect": false
+       }]
+     }
+     ```
+   - If user selects "Yes" → task_id = inferred value (lowercase), proceed to step 5
+   - If user selects "No" → Show usage, STOP
+
+   **If NO context found**:
+   ```
+   ❌ Error: task_id is required
+
+   Usage: /ut.specify <task-id>
+   Example: /ut.specify pref-001
+
+   No previous task context found in this conversation.
+   ```
+   STOP - Do NOT proceed
+
+4. **Validate task_id format**:
+   - Must match pattern: `[folder/]prefix-number`
+   - Prefix must be in `.speckit.env` SPECKIT_PREFIX_LIST
+   - Examples:
+     - ✅ `/ut.specify pref-001` → task_id: `pref-001`
+     - ✅ `/ut.specify PREF-001` → task_id: `pref-001` (case-insensitive)
+     - ❌ `/ut.specify create UT` → ERROR (no task ID)
 
 2. **Execute Script**:
 

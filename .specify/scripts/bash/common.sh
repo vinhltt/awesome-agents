@@ -128,21 +128,36 @@ find_feature_dir_by_prefix() {
     fi
 }
 
+# Get feature paths with REQUIRED task_id parameter
+# Usage: get_feature_paths <task_id>
+# Returns: Shell variable assignments for eval
+# Error: Exits with error if task_id missing or invalid
 get_feature_paths() {
+    local task_id="${1:-}"
     local repo_root=$(get_repo_root)
-    local current_branch=$(get_current_branch)
     local has_git_repo="false"
+
+    # STRICT: task_id is REQUIRED - NO FALLBACK
+    if [[ -z "$task_id" ]]; then
+        echo "❌ Error: task_id is required" >&2
+        echo "Usage: get_feature_paths <task-id>" >&2
+        echo "Example: get_feature_paths pref-001" >&2
+        return 1
+    fi
+
+    # Case-insensitive: convert to lowercase
+    task_id=$(echo "$task_id" | tr '[:upper:]' '[:lower:]')
 
     if has_git; then
         has_git_repo="true"
     fi
 
-    # Use prefix-based lookup to support multiple branches per spec
-    local feature_dir=$(find_feature_dir_by_prefix "$repo_root" "$current_branch")
+    # Use prefix-based lookup with explicit task_id
+    local feature_dir=$(find_feature_dir_by_prefix "$repo_root" "$task_id")
 
     cat <<EOF
 REPO_ROOT='$repo_root'
-CURRENT_BRANCH='$current_branch'
+TASK_ID='$task_id'
 HAS_GIT='$has_git_repo'
 FEATURE_DIR='$feature_dir'
 FEATURE_SPEC='$feature_dir/spec.md'

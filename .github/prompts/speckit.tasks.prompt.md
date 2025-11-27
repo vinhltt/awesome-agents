@@ -26,56 +26,79 @@ $ARGUMENTS
 You **MUST** consider the user input before proceeding (if not empty).
 
 ## Outline
-### Step 0: Validate Task ID
+### Step 0: Validate or Infer Task ID
 
-**CRITICAL**: Check task ID argument FIRST before any operations.
-**NOTE**: Users must create feature branch manually before running this command.
+**CRITICAL**: Handle task_id before any operations.
 
 1. **Parse user input**:
-   - Extract first argument from command
+   - Extract first argument from `$ARGUMENTS`
    - Expected format: `[folder/]prefix-number`
 
-2. **Check if task ID provided**:
-   ```
-   If first argument is EMPTY or MISSING:
-     ERROR: "Task ID required. Usage: /speckit.tasks {task-id}"
-     STOP - Do NOT proceed to Step 1
-   ```
+2. **Check if task_id provided**:
 
-3. **Validate task ID format**:
+   **If task_id provided and valid** (matches pattern `[folder/]prefix-number`):
+   - Convert to lowercase (case-insensitive)
+   - → Proceed to Step 1 with this task_id
+
+   **If task_id missing or invalid**:
+   - → Proceed to inference (step 3)
+
+3. **Infer from conversation context**:
+   - Search this conversation for:
+     - Previous `/speckit.*` or `/ut.*` command executions with task_id
+     - Task_id patterns mentioned (e.g., "pref-001", "MRR-123", "aa-2")
+     - Output mentioning "Feature pref-001" or similar
+
+   **If context found** (e.g., "pref-001"):
+   - Use **AskUserQuestion** tool to confirm:
+     ```json
+     {
+       "questions": [{
+         "question": "No task_id provided. Use detected context 'pref-001'?",
+         "header": "Task ID",
+         "options": [
+           {"label": "Yes, use pref-001", "description": "Proceed with the detected task"},
+           {"label": "No, specify another", "description": "I'll provide a different task_id"}
+         ],
+         "multiSelect": false
+       }]
+     }
+     ```
+   - If user selects "Yes" → task_id = inferred value (lowercase), proceed to Step 1
+   - If user selects "No" → Show usage, STOP
+
+   **If NO context found**:
+   ```
+   ❌ Error: task_id is required
+
+   Usage: /speckit.tasks <task-id>
+   Example: /speckit.tasks pref-001
+
+   No previous task context found in this conversation.
+   ```
+   STOP - Do NOT proceed to Step 1
+
+4. **Validate task_id format**:
    - Must match pattern: `[folder/]prefix-number`
-   - Prefix must be in `.speckit.env` SPECKIT_PREFIX_LIST (default: aa)
-   - Examples (assuming prefix=pref):
-     - ✅ `/speckit.tasks pref-001` → feature ID: `pref-001`
-     - ✅ `/speckit.tasks hotfix/pref-123` → feature ID: `hotfix/pref-123`
-     - ✅ `/speckit.tasks AL-991` → feature ID: `AL-991` (if AL in prefix list)
-     - ❌ `/speckit.tasks` → ERROR (no task ID)
-     - ❌ `/speckit.tasks invalid-id` → ERROR (invalid format)
+   - Prefix must be in `.speckit.env` SPECKIT_PREFIX_LIST
+   - Examples:
+     - ✅ `/speckit.tasks pref-001` → task_id: `pref-001`
+     - ✅ `/speckit.tasks PREF-001` → task_id: `pref-001` (case-insensitive)
+     - ✅ `/speckit.tasks hotfix/pref-123` → task_id: `hotfix/pref-123`
+     - ❌ `/speckit.tasks` without context → ERROR (no task ID)
 
-4. **Determine feature directory**:
+5. **Determine feature directory**:
    - Pattern: `.specify/{folder}/{prefix-number}/`
    - Default folder: `features` (from SPECKIT_DEFAULT_FOLDER)
-   - Examples (assuming prefix=pref):
-     - `pref-001` → `.specify/features/pref-001/`
-     - `hotfix/pref-123` → `.specify/hotfix/pref-123/`
-
-**Error Handling**:
-- If task ID missing → ERROR with usage example, STOP
-- If task ID invalid format → ERROR with format requirements, STOP
-- If feature directory not found → ERROR, suggest running `/speckit.specify` first
+   - If not found → ERROR, suggest running `/speckit.specify` first
 
 **After Validation**:
-- Proceed to Step 1 only if task ID valid
-- Use task ID to locate feature files in `.specify/{folder}/{task-id}/`
+- Proceed to Step 1 only if task_id valid
+- Use task_id to locate feature files
 
 ### Step 1: Setup
 
-**IMPORTANT**: The task ID from Step 0 is ONLY for validation purposes. Do NOT pass it to the script below. The script derives feature directory from current branch automatically.
-
-Run `.specify/scripts/bash/check-prerequisites.sh --json` from repo root (NO task ID argument) and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
-
-**Correct**: `check-prerequisites.sh --json`
-**WRONG**: `check-prerequisites.sh --json MRR-1427` ← Do NOT pass task ID!
+Run `.specify/scripts/bash/check-prerequisites.sh {task_id} --json` from repo root (pass the validated task_id from Step 0). Parse JSON for TASK_ID, FEATURE_DIR, AVAILABLE_DOCS.
 
 2. **Load design documents**: Read from FEATURE_DIR:
    - **Required**: plan.md (tech stack, libraries, structure), spec.md (user stories with priorities)

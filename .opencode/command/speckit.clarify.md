@@ -2,6 +2,21 @@
 description: Identify underspecified areas in the current feature spec by asking up to 5 highly targeted clarification questions and encoding answers back into the spec.
 ---
 
+## ⛔ CRITICAL: Error Handling
+
+**If ANY script returns an error, you MUST:**
+1. **STOP immediately** - Do NOT attempt workarounds or auto-fixes
+2. **Report the error** - Show the exact error message to the user
+3. **Wait for user** - Ask user how to proceed before taking any action
+
+**DO NOT:**
+- Try alternative approaches when scripts fail
+- Create branches manually when script validation fails
+- Guess or assume what the user wants after an error
+- Continue with partial results
+
+---
+
 ## User Input
 
 ```text
@@ -16,9 +31,78 @@ Goal: Detect and reduce ambiguity or missing decision points in the active featu
 
 Note: This clarification workflow is expected to run (and be completed) BEFORE invoking `/speckit.plan`. If the user explicitly states they are skipping clarification (e.g., exploratory spike), you may proceed, but must warn that downstream rework risk increases.
 
-Execution steps:
+### Step 0: Validate or Infer Task ID
 
-1. Run `.specify/scripts/bash/check-prerequisites.sh --json --paths-only` from repo root **once** (combined `--json --paths-only` mode / `-Json -PathsOnly`). Parse minimal JSON payload fields:
+**CRITICAL**: Handle task_id before any operations.
+
+1. **Parse user input**:
+   - Extract first argument from `$ARGUMENTS`
+   - Expected format: `[folder/]prefix-number`
+
+2. **Check if task_id provided**:
+
+   **If task_id provided and valid** (matches pattern `[folder/]prefix-number`):
+   - Convert to lowercase (case-insensitive)
+   - → Proceed to Execution Steps with this task_id
+
+   **If task_id missing or invalid**:
+   - → Proceed to inference (step 3)
+
+3. **Infer from conversation context**:
+   - Search this conversation for:
+     - Previous `/speckit.*` or `/ut.*` command executions with task_id
+     - Task_id patterns mentioned (e.g., "pref-001", "MRR-123", "aa-2")
+     - Output mentioning "Feature pref-001" or similar
+
+   **If context found** (e.g., "pref-001"):
+   - Use **AskUserQuestion** tool to confirm:
+     ```json
+     {
+       "questions": [{
+         "question": "No task_id provided. Use detected context 'pref-001'?",
+         "header": "Task ID",
+         "options": [
+           {"label": "Yes, use pref-001", "description": "Proceed with the detected task"},
+           {"label": "No, specify another", "description": "I'll provide a different task_id"}
+         ],
+         "multiSelect": false
+       }]
+     }
+     ```
+   - If user selects "Yes" → task_id = inferred value (lowercase), proceed
+   - If user selects "No" → Show usage, STOP
+
+   **If NO context found**:
+   ```
+   ❌ Error: task_id is required
+
+   Usage: /speckit.clarify <task-id>
+   Example: /speckit.clarify pref-001
+
+   No previous task context found in this conversation.
+   ```
+   STOP - Do NOT proceed
+
+4. **Validate task_id format**:
+   - Must match pattern: `[folder/]prefix-number`
+   - Prefix must be in `.speckit.env` SPECKIT_PREFIX_LIST
+   - Examples:
+     - ✅ `/speckit.clarify pref-001` → task_id: `pref-001`
+     - ✅ `/speckit.clarify PREF-001` → task_id: `pref-001` (case-insensitive)
+     - ❌ `/speckit.clarify` without context → ERROR (no task ID)
+
+5. **Determine feature directory**:
+   - Pattern: `.specify/{folder}/{prefix-number}/`
+   - Default folder: `features` (from SPECKIT_DEFAULT_FOLDER)
+   - If not found → ERROR, suggest running `/speckit.specify` first
+
+**After Validation**:
+- Proceed to Execution Steps only if task_id valid
+- Use task_id to locate feature files
+
+### Execution Steps
+
+1. Run `.specify/scripts/bash/check-prerequisites.sh {task_id} --json --paths-only` from repo root (pass the validated task_id from Step 0). Parse minimal JSON payload fields:
    - `FEATURE_DIR`
    - `FEATURE_SPEC`
    - (Optionally capture `IMPL_PLAN`, `TASKS` for future chained flows.)

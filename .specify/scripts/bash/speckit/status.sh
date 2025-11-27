@@ -111,6 +111,9 @@ if [ -z "$FEATURE_ID" ]; then
     exit 0
 fi
 
+# Case-insensitive: convert feature ID to lowercase
+FEATURE_ID=$(echo "$FEATURE_ID" | tr '[:upper:]' '[:lower:]')
+
 # Specific feature status - parse feature ID
 if [[ "$FEATURE_ID" == */* ]]; then
     # Contains folder: hotfix/aa-2

@@ -26,7 +26,7 @@ Helps developers understand what's been completed, what's in progress, and what 
 
 ## Input
 
-- **Feature ID**: Required argument (e.g., `pref-2`)
+- **Feature ID**: Required argument (e.g., `{prefix}-2` where prefix is from SPECKIT_PREFIX_LIST)
 - **Workflow Detection**: Auto-detects which workflows are active based on artifacts
 
 ## Output
@@ -41,47 +41,75 @@ Displays to terminal:
 7. **Recommendations**: Suggested next steps based on state
 
 ## Execution Instructions
-### Step 0: Validate Task ID
+### Step 0: Validate or Infer Task ID
 
-**CRITICAL**: Check task ID argument FIRST before any operations.
-**NOTE**: Users must create feature branch manually before running this command.
+**CRITICAL**: Handle task_id before any operations.
 
 1. **Parse user input**:
-   - Extract first argument from command
+   - Extract first argument from `$ARGUMENTS`
    - Expected format: `[folder/]prefix-number`
 
-2. **Check if task ID provided**:
-   ```
-   If first argument is EMPTY or MISSING:
-     ERROR: "Task ID required. Usage: /speckit.status {task-id}"
-     STOP - Do NOT proceed to Step 1
-   ```
+2. **Check if task_id provided**:
 
-3. **Validate task ID format**:
+   **If task_id provided and valid** (matches pattern `[folder/]prefix-number`):
+   - Convert to lowercase (case-insensitive)
+   - → Proceed to Step 1 with this task_id
+
+   **If task_id missing or invalid**:
+   - → Proceed to inference (step 3)
+
+3. **Infer from conversation context**:
+   - Search this conversation for:
+     - Previous `/speckit.*` or `/ut.*` command executions with task_id
+     - Task_id patterns mentioned (e.g., "pref-001", "MRR-123", "aa-2")
+     - Output mentioning "Feature pref-001" or similar
+
+   **If context found** (e.g., "pref-001"):
+   - Use **AskUserQuestion** tool to confirm:
+     ```json
+     {
+       "questions": [{
+         "question": "No task_id provided. Use detected context 'pref-001'?",
+         "header": "Task ID",
+         "options": [
+           {"label": "Yes, use pref-001", "description": "Proceed with the detected task"},
+           {"label": "No, specify another", "description": "I'll provide a different task_id"}
+         ],
+         "multiSelect": false
+       }]
+     }
+     ```
+   - If user selects "Yes" → task_id = inferred value (lowercase), proceed to Step 1
+   - If user selects "No" → Show usage, STOP
+
+   **If NO context found**:
+   ```
+   ❌ Error: task_id is required
+
+   Usage: /speckit.status <task-id>
+   Example: /speckit.status pref-001
+
+   No previous task context found in this conversation.
+   ```
+   STOP - Do NOT proceed to Step 1
+
+4. **Validate task_id format**:
    - Must match pattern: `[folder/]prefix-number`
-   - Prefix must be in `.speckit.env` SPECKIT_PREFIX_LIST (default: aa)
-   - Examples (assuming prefix=pref):
-     - ✅ `/speckit.status pref-001` → feature ID: `pref-001`
-     - ✅ `/speckit.status hotfix/pref-123` → feature ID: `hotfix/pref-123`
-     - ✅ `/speckit.status AL-991` → feature ID: `AL-991` (if AL in prefix list)
-     - ❌ `/speckit.status` → ERROR (no task ID)
-     - ❌ `/speckit.status invalid-id` → ERROR (invalid format)
+   - Prefix must be in `.speckit.env` SPECKIT_PREFIX_LIST
+   - Examples:
+     - ✅ `/speckit.status pref-001` → task_id: `pref-001`
+     - ✅ `/speckit.status PREF-001` → task_id: `pref-001` (case-insensitive)
+     - ✅ `/speckit.status hotfix/pref-123` → task_id: `hotfix/pref-123`
+     - ❌ `/speckit.status` without context → ERROR (no task ID)
 
-4. **Determine feature directory**:
+5. **Determine feature directory**:
    - Pattern: `.specify/{folder}/{prefix-number}/`
    - Default folder: `features` (from SPECKIT_DEFAULT_FOLDER)
-   - Examples (assuming prefix=pref):
-     - `pref-001` → `.specify/features/pref-001/`
-     - `hotfix/pref-123` → `.specify/hotfix/pref-123/`
-
-**Error Handling**:
-- If task ID missing → ERROR with usage example, STOP
-- If task ID invalid format → ERROR with format requirements, STOP
-- If feature directory not found → ERROR, suggest running `/speckit.specify` first
+   - If not found → ERROR, suggest running `/speckit.specify` first
 
 **After Validation**:
-- Proceed to Step 1 only if task ID valid
-- Use task ID to locate feature files in `.specify/{folder}/{task-id}/`
+- Proceed to Step 1 only if task_id valid
+- Use task_id to locate feature files
 
 
 ### Step 1: Validate Feature Directory
@@ -926,8 +954,8 @@ Based on detected state, add relevant warnings or tips:
 ❌ Feature 'pref-2' not found
 
 Available features:
-  - pref-1 (Awesome Agent Workflow)
-  - pref-3 (Code Review Assistant)
+  - aa-1 (Awesome Agent Workflow)
+  - aa-3 (Code Review Assistant)
 
 Create new feature:
   → /speckit.specify pref-2
@@ -962,7 +990,7 @@ If no feature ID provided, list all features:
 Available Features:
 ====================
 
-pref-1: Awesome Agent Workflow
+aa-1: Awesome Agent Workflow
   Status: ✅ Complete
   Progress: 100%
   Last modified: 1 week ago
@@ -972,7 +1000,7 @@ pref-2: Unit Test Generation Command Flow
   Progress: 65%
   Last modified: 1 hour ago
 
-pref-3: Code Review Assistant
+aa-3: Code Review Assistant
   Status: 📋 Planned
   Progress: 30%
   Last modified: 3 days ago

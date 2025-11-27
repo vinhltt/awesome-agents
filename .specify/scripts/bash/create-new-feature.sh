@@ -77,6 +77,9 @@ if [ -z "$FEATURE_DESCRIPTION" ]; then
     exit 1
 fi
 
+# Case-insensitive: convert ticket ID to lowercase
+TICKET_ID=$(echo "$TICKET_ID" | tr '[:upper:]' '[:lower:]')
+
 # Parse and validate ticket ID using environment configuration
 parsed=$(parse_ticket_id "$TICKET_ID") || exit 1
 IFS='|' read -r folder prefix number <<< "$parsed"
@@ -176,16 +179,15 @@ if [ -f "$TEMPLATE" ]; then cp "$TEMPLATE" "$SPEC_FILE"; else touch "$SPEC_FILE"
 export SPECIFY_FEATURE="$FOLDER_NAME"
 
 if $JSON_MODE; then
-    printf '{"BRANCH_NAME":"%s","SPEC_FILE":"%s","TICKET_ID":"%s","FOLDER":"%s","PREFIX":"%s","NUMBER":"%s","FEATURE_DESCRIPTION":"%s"}\n' \
-        "$BRANCH_NAME" "$SPEC_FILE" "$DISPLAY_TICKET_ID" "$folder" "$prefix" "$number" "$FEATURE_DESCRIPTION"
+    printf '{"TASK_ID":"%s","BRANCH_NAME":"%s","SPEC_FILE":"%s","TICKET_ID":"%s","FOLDER":"%s","PREFIX":"%s","NUMBER":"%s","FEATURE_DESCRIPTION":"%s"}\n' \
+        "$DISPLAY_TICKET_ID" "$BRANCH_NAME" "$SPEC_FILE" "$DISPLAY_TICKET_ID" "$folder" "$prefix" "$number" "$FEATURE_DESCRIPTION"
 else
+    echo "TASK_ID: $DISPLAY_TICKET_ID"
     echo "EXPECTED_BRANCH: $BRANCH_NAME"
     echo "CURRENT_BRANCH: $(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'N/A')"
     echo "SPEC_FILE: $SPEC_FILE"
-    echo "TICKET_ID: $DISPLAY_TICKET_ID"
     echo "FOLDER: $folder"
     echo "PREFIX: $prefix"
     echo "NUMBER: $number"
     echo "FEATURE_DESCRIPTION: $FEATURE_DESCRIPTION"
-    echo "SPECIFY_FEATURE environment variable set to: $FOLDER_NAME"
 fi
