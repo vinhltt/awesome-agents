@@ -150,12 +150,12 @@ Examples of foundational tasks (adjust based on your project):
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T### [P] Documentation updates in docs/
-- [ ] T### Code cleanup and refactoring
-- [ ] T### Performance optimization across all stories
-- [ ] T### [P] Additional unit tests (if requested) in tests/unit/
-- [ ] T### Security hardening
-- [ ] T### Run quickstart.md validation
+- [ ] TXXX [P] Documentation updates in docs/
+- [ ] TXXX Code cleanup and refactoring
+- [ ] TXXX Performance optimization across all stories
+- [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/
+- [ ] TXXX Security hardening
+- [ ] TXXX Run quickstart.md validation
 
 ---
 
