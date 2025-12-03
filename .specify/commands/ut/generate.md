@@ -1,630 +1,263 @@
-# /ut.generate - Generate Unit Test Code
-
-## ⛔ CRITICAL: Error Handling
-
-**If ANY script returns an error, you MUST:**
-1. **STOP immediately** - Do NOT attempt workarounds or auto-fixes
-2. **Report the error** - Show the exact error message to the user
-3. **Wait for user** - Ask user how to proceed before taking any action
-
-**DO NOT:**
-- Try alternative approaches when scripts fail
-- Create branches manually when script validation fails
-- Guess or assume what the user wants after an error
-- Continue with partial results
-
----
+# /ut:generate - Generate Unit Test Files
 
 ## Purpose
 
-Generate executable unit test code based on the test implementation plan. Creates test files with test cases, assertions, mocks, and fixtures following project conventions and framework syntax.
+Generate executable unit test code based on the test plan. Creates test files with test cases, assertions, mocks, and fixtures following project conventions.
+
+---
 
 ## Input
 
-- **Feature ID**: **REQUIRED** argument (e.g., `pref-2`, `AL-991`, `test/pref-123`)
-  - Format: `[folder/]prefix-number`
-  - Prefix configured in `.specify/.speckit.env`
-  - If missing: ERROR "Task ID required. Usage: /ut:generate {task-id}"
-- **Test Plan**: Reads from `.specify/features/{feature-id}/test-plan.md`
-- **Test Spec**: Reads from `.specify/features/{feature-id}/test-spec.md`
-- **Coverage Report**: Reads from `.specify/features/{feature-id}/coverage-report.json`
-- **Source Code**: Analyzes actual source files to generate accurate tests
+- **test-plan.md** - Test organization and implementation tasks
+- **test-spec.md** - Test scenarios and expected outcomes
+- **coverage-analysis.md** - Framework info and untested units
+
+---
 
 ## Output
 
 Creates test files in project directory:
-- Jest/Vitest: `*.test.{js|ts}` or `*.spec.{js|ts}`
-- Pytest: `test_*.py` or `*_test.py`
 
-With complete test suites including:
-- Test setup/teardown
-- Test cases with assertions
-- Mock implementations
-- Test data/fixtures
-- Documentation comments
+| Framework | Pattern |
+|-----------|---------|
+| Jest/Vitest | `*.test.{ts,js}` or `*.spec.{ts,js}` |
+| Pytest | `test_*.py` or `*_test.py` |
+| RSpec | `*_spec.rb` |
+| JUnit | `*Test.java` |
+| xUnit/NUnit | `*Tests.cs` |
+| Go | `*_test.go` |
 
-## Execution Instructions
+---
 
-### Step 0: Validate or Infer Task ID
+## Execution
 
-**CRITICAL**: Handle task_id before any operations.
+### Step 0: Run Bash Script
 
-1. **Parse user input**:
-   - Extract first argument from `$ARGUMENTS`
-   - Expected format: `[folder/]prefix-number` (e.g., `pref-991`, `AL-991`, `test/pref-123`)
-
-2. **Check if task_id provided**:
-
-   **If task_id provided and valid** (matches pattern `[folder/]prefix-number`):
-   - Convert to lowercase (case-insensitive)
-   - → Proceed to Step 1 with this task_id
-
-   **If task_id missing or invalid**:
-   - → Proceed to inference (step 3)
-
-3. **Infer from conversation context** (only if task_id missing):
-   - Search this conversation for:
-     - Previous `/speckit.*` or `/ut.*` command executions with task_id
-     - Task_id patterns mentioned (e.g., "pref-001", "MRR-123", "aa-2")
-     - Output mentioning "Feature pref-001" or similar
-
-   **If context found** (e.g., "pref-001"):
-   - Use **AskUserQuestion** tool to confirm:
-     ```json
-     {
-       "questions": [{
-         "question": "No task_id provided. Use detected context 'pref-001'?",
-         "header": "Task ID",
-         "options": [
-           {"label": "Yes, use pref-001", "description": "Proceed with the detected task"},
-           {"label": "No, specify another", "description": "I'll provide a different task_id"}
-         ],
-         "multiSelect": false
-       }]
-     }
-     ```
-   - If user selects "Yes" → task_id = inferred value (lowercase), proceed to Step 1
-   - If user selects "No" → Show usage, STOP
-
-   **If NO context found**:
-   ```
-   ❌ Error: task_id is required
-
-   Usage: /ut.generate <task-id>
-   Example: /ut.generate pref-001
-
-   No previous task context found in this conversation.
-   ```
-   STOP - Do NOT proceed to Step 1
-
-4. **Validate task_id format**:
-   - Must match pattern: `[folder/]prefix-number`
-   - Prefix must be in `.specify/.speckit.env` SPECKIT_PREFIX_LIST
-   - Examples:
-     - ✅ `/ut.generate pref-991` → task_id: `pref-991`
-     - ✅ `/ut.generate PREF-991` → task_id: `pref-991` (case-insensitive)
-     - ❌ `/ut.generate` without context → ERROR (no task ID)
-
-5. **Determine feature directory**:
-   - Pattern: `.specify/{folder}/{prefix-number}/`
-   - Default folder: `features` (from SPECKIT_DEFAULT_FOLDER)
-   - If not found → ERROR, suggest running `/ut.specify` first
-
-**After Validation**:
-- Proceed to Step 1 only if task_id valid
-- Use task_id to locate feature files
-
-### Step 1: Load and Validate Inputs
-
-1. **Check test-plan.md exists**: Contains test structure and task breakdown
-2. **Check test-spec.md exists**: Contains test scenarios and expected outcomes
-3. **Check coverage-report.json exists**: Contains framework info
-
-If missing → Provide guidance on running prerequisite commands
-
-### Step 2: Read Test Organization Pattern
-
-**CRITICAL**: Read test file organization pattern from test-plan.md
-
-1. **Load test-plan.md**
-2. **Find "Test Organization Decision" section**:
-   ```markdown
-   ## Test Organization Decision
-
-   **Pattern**: Directory-based with `__tests__/` subdirectories
-   **Structure**: `{source-dir}/__tests__/{filename}.test.ts`
-   **Detected from**: ...
-   ```
-
-3. **Extract pattern information**:
-   - **Pattern type**: directory | co-located | separate-project
-   - **Structure template**: Exact file path pattern (e.g., `/tests/**/*.test.ts` or `{source-dir}/__tests__/*.test.ts`)
-   - **Naming convention**: `*.test.ts` vs `test_*.py` etc.
-
-4. **Use this pattern** to determine test file paths in Step 5
-
-**Examples**:
-
-**Pattern 1: Root-level `/tests/` directory (Nuxt/Vue convention)**:
-```
-Structure: /tests/**/*.test.ts
-Source: composables/useCalculator.ts
-Test file: /tests/composables/useCalculator.test.ts  ← Create here
+```bash
+bash .specify/scripts/bash/ut/generate.sh <feature-id>
 ```
 
-**Pattern 2: `__tests__/` subdirectories (Jest/Vitest convention)**:
+Parse JSON output -> Store `FEATURE_DIR`, `PLAN_FILE`, `TEST_SPEC_FILE`
+
+If error -> STOP and report to user
+
+---
+
+### Step 1: Load Plan and Spec
+
+**Read from FEATURE_DIR**:
+- `test-plan.md` - For test organization pattern, test suites, mocking strategy
+- `test-spec.md` - For test cases (TC-*) with Given/When/Then
+- `coverage-analysis.md` - For framework detection
+
+If missing -> "Run `/ut:plan {feature-id}` first"
+
+---
+
+### Step 2: Determine Test Paths (AI)
+
+**From test-plan.md "Test Organization" section**:
+
+| Pattern Type | Example |
+|--------------|---------|
+| `/tests/` directory | `/tests/composables/useCalc.test.ts` |
+| `__tests__/` subdirs | `composables/__tests__/useCalc.test.ts` |
+| Co-located | `composables/useCalc.spec.ts` |
+| Separate project | `MyProject.Tests/CalcTests.cs` |
+
+Apply pattern to each source file in plan.
+
+---
+
+### Step 3: Read Source Files (AI)
+
+For each test suite in plan:
+
+1. **Read source file** to understand actual implementation
+2. **Extract**:
+   - Function signatures and return types
+   - Class methods and properties
+   - Dependencies to mock
+3. **Identify edge cases** from actual code logic
+
+---
+
+### Step 4: Generate Test Structure
+
+**Template for Jest/Vitest**:
+```typescript
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { FunctionName } from '../path'
+
+// Mocks
+vi.mock('../dependency')
+
+describe('FunctionName', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should {test case from TC-001}', () => {
+    // Arrange - from "Given"
+    // Act - from "When"
+    // Assert - from "Then"
+  })
+})
 ```
-Structure: {source-dir}/__tests__/{filename}.test.ts
-Source: composables/useCalculator.ts
-Test file: composables/__tests__/useCalculator.test.ts  ← Create here
+
+**Template for Pytest**:
+```python
+import pytest
+from unittest.mock import patch
+from module import function_name
+
+class TestFunctionName:
+    @pytest.fixture
+    def setup(self):
+        return function_name()
+
+    def test_case_from_tc001(self, setup):
+        # Arrange - from "Given"
+        # Act - from "When"
+        # Assert - from "Then"
 ```
 
-**Pattern 3: Co-located (Angular convention)**:
+---
+
+### Step 5: Implement Test Cases
+
+For each TC-* in test-spec.md:
+
+```markdown
+##### TC-001: Should calculate total
+- **Given**: Cart with items
+- **When**: calculateTotal() called
+- **Then**: Returns sum
 ```
-Structure: {source-dir}/{filename}.spec.ts
-Source: composables/useCalculator.ts
-Test file: composables/useCalculator.spec.ts  ← Create here
+
+Generate:
+
+```typescript
+it('should calculate total', () => {
+  // Arrange
+  const cart = new Cart()
+  cart.add({ price: 10 })
+  cart.add({ price: 20 })
+
+  // Act
+  const total = cart.calculateTotal()
+
+  // Assert
+  expect(total).toBe(30)
+})
 ```
 
-**If "Test Organization Decision" section is missing**:
-- ❌ STOP and report error
-- Tell user to run `/ut.plan {feature-id}` first
-- Pattern decision is MANDATORY for correct test placement
+---
 
-### Step 3: Determine Target Framework
+### Step 6: Implement Mocks
 
-From coverage-report.json:
+**From test-plan.md "Mocking Strategy"**:
 
-```json
-{
-  "environment": {
-    "framework": {
-      "name": "Jest",
-      "version": "29.7.0"
-    }
-  }
+| Dependency | Mock Implementation |
+|------------|---------------------|
+| External API | `vi.mock('./api', () => ({ call: vi.fn() }))` |
+| Database | In-memory mock or mock repository |
+| File system | `vi.spyOn(fs, 'readFile')` |
+| Time/Date | `vi.useFakeTimers()` |
+
+---
+
+### Step 7: Create Fixtures
+
+If tests share data, create fixture files:
+
+```typescript
+// fixtures/users.ts
+export const validUser = {
+  id: 1,
+  name: 'Test User',
+  email: 'test@example.com'
+}
+
+export const invalidUser = {
+  id: -1,
+  name: '',
+  email: 'invalid'
 }
 ```
 
-**Supported Frameworks**:
-- **Jest**: JavaScript/TypeScript (most common)
-- **Vitest**: JavaScript/TypeScript (Vite projects)
-- **Pytest**: Python
+---
 
-### Step 4: Read Source Code
+### Step 8: Write Files
 
-For each test suite in test-plan.md:
+1. Create directories if needed
+2. Write test files with proper formatting
+3. Write fixture files if created
 
-1. **Locate source file**: Read the actual code to be tested
-2. **Extract structure**:
-   - Function signatures
-   - Class definitions and methods
-   - Parameter types
-   - Return types
-3. **Identify dependencies**: Imports, external calls, database access
+---
 
-### Step 5: Determine Test File Paths
-
-Using the pattern from Step 2, determine where to create each test file:
-
-1. **Get source file path** from test-plan.md (e.g., `composables/useCalculator.ts`)
-2. **Apply pattern template** from Step 2:
-   - If `/tests/**/*.test.ts` → `/tests/composables/useCalculator.test.ts`
-   - If `{source-dir}/__tests__/*.test.ts` → `composables/__tests__/useCalculator.test.ts`
-   - If `{source-dir}/*.spec.ts` → `composables/useCalculator.spec.ts`
-
-3. **Create parent directories** if they don't exist
-4. **Verify write permissions** before attempting file creation
-
-### Step 6: Generate Test File Structure
-
-**For Jest/Vitest**:
-
-```typescript
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals'; // or 'vitest'
-import { ClassName } from '../src/module-name';
-import { dependency } from '../src/dependency';
-
-// Mock external dependencies
-jest.mock('../src/dependency'); // or vi.mock()
-
-describe('ClassName', () => {
-  let instance: ClassName;
-
-  beforeEach(() => {
-    // Setup: runs before each test
-    instance = new ClassName();
-  });
-
-  afterEach(() => {
-    // Teardown: runs after each test
-    jest.clearAllMocks();
-  });
-
-  describe('methodName()', () => {
-    it('should handle happy path case', () => {
-      // Arrange
-      const input = { /* test data */ };
-
-      // Act
-      const result = instance.methodName(input);
-
-      // Assert
-      expect(result).toBeDefined();
-      expect(result.property).toBe(expectedValue);
-    });
-
-    it('should handle edge case', () => {
-      // Test implementation
-    });
-
-    it('should throw error for invalid input', () => {
-      expect(() => instance.methodName(invalidInput)).toThrow('Error message');
-    });
-  });
-});
-```
-
-**For Pytest**:
-
-```python
-import pytest
-from src.module_name import ClassName
-from unittest.mock import Mock, patch
-
-class TestClassName:
-    @pytest.fixture
-    def instance(self):
-        """Fixture: Create instance before each test"""
-        return ClassName()
-
-    def test_method_name_happy_path(self, instance):
-        """Test methodName with valid input"""
-        # Arrange
-        input_data = { "key": "value" }
-
-        # Act
-        result = instance.method_name(input_data)
-
-        # Assert
-        assert result is not None
-        assert result.property == expected_value
-
-    def test_method_name_edge_case(self, instance):
-        """Test methodName with edge case"""
-        # Test implementation
-        pass
-
-    def test_method_name_invalid_input(self, instance):
-        """Test methodName raises error for invalid input"""
-        with pytest.raises(ValueError):
-            instance.method_name(invalid_input)
-```
-
-### Step 7: Generate Test Cases from Test Spec
-
-For each test case in test-spec.md:
-
-```markdown
-##### TC-001: Should calculate total correctly
-
-- **Given**: Shopping cart with 3 items
-- **When**: calculateTotal() is called
-- **Then**: Returns sum of all item prices
-- **Input**: `[{price: 10}, {price: 20}, {price: 30}]`
-- **Output**: `60`
-```
-
-Generate corresponding test:
-
-```typescript
-it('should calculate total correctly', () => {
-  // Arrange - from "Given"
-  const cart = new ShoppingCart();
-  cart.addItem({ id: 1, price: 10 });
-  cart.addItem({ id: 2, price: 20 });
-  cart.addItem({ id: 3, price: 30 });
-
-  // Act - from "When"
-  const total = cart.calculateTotal();
-
-  // Assert - from "Then"
-  expect(total).toBe(60);
-});
-```
-
-### Step 8: Implement Mocking
-
-Based on test-plan.md mocking strategy:
-
-**External API Mock**:
-```typescript
-// At top of file
-jest.mock('./api/payment', () => ({
-  processPayment: jest.fn()
-}));
-
-// In test
-import { processPayment } from './api/payment';
-
-it('should process payment successfully', async () => {
-  // Setup mock behavior
-  (processPayment as jest.Mock).mockResolvedValue({
-    success: true,
-    transactionId: 'TX-123'
-  });
-
-  // Test code
-  const result = await checkout.process();
-
-  // Verify mock was called
-  expect(processPayment).toHaveBeenCalledWith({
-    amount: 100,
-    currency: 'USD'
-  });
-  expect(result.success).toBe(true);
-});
-```
-
-**Database Mock**:
-```typescript
-const mockDb = {
-  query: jest.fn(),
-  insert: jest.fn(),
-  update: jest.fn()
-};
-
-jest.mock('./database', () => mockDb);
-```
-
-**Pytest Mocking**:
-```python
-@patch('src.module.external_api_call')
-def test_with_mocked_api(mock_api, instance):
-    """Test with mocked external API"""
-    # Setup mock
-    mock_api.return_value = {"status": "success"}
-
-    # Test
-    result = instance.method_that_calls_api()
-
-    # Verify
-    assert result.status == "success"
-    mock_api.assert_called_once()
-```
-
-### Step 9: Add Test Data and Fixtures
-
-**Jest/Vitest Fixtures**:
-```typescript
-const validUser = {
-  id: 1,
-  name: 'John Doe',
-  email: 'john@example.com',
-  role: 'admin'
-};
-
-const invalidUser = {
-  id: -1,
-  name: '',
-  email: 'invalid-email'
-};
-```
-
-**Pytest Fixtures**:
-```python
-@pytest.fixture
-def valid_user():
-    return {
-        "id": 1,
-        "name": "John Doe",
-        "email": "john@example.com",
-        "role": "admin"
-    }
-
-@pytest.fixture
-def database_connection():
-    """Fixture with setup and teardown"""
-    conn = create_test_database()
-    yield conn
-    conn.close()
-```
-
-### Step 10: Handle Async Code
-
-**Jest/Vitest Async Tests**:
-```typescript
-it('should fetch data asynchronously', async () => {
-  const data = await fetchData();
-  expect(data).toBeDefined();
-});
-
-it('should handle async errors', async () => {
-  await expect(failingAsyncFunction()).rejects.toThrow('Error');
-});
-```
-
-**Pytest Async Tests**:
-```python
-@pytest.mark.asyncio
-async def test_async_fetch():
-    """Test async function"""
-    data = await fetch_data()
-    assert data is not None
-```
-
-### Step 11: Add Documentation Comments
-
-Add descriptive comments to tests:
-
-```typescript
-/**
- * Test suite for ShoppingCart class
- *
- * Tests cover:
- * - Adding/removing items
- * - Calculating totals
- * - Applying discounts
- * - Edge cases (empty cart, negative prices)
- */
-describe('ShoppingCart', () => {
-  /**
-   * Test: Calculate total correctly
-   *
-   * Verifies that calculateTotal() returns the sum of all item prices
-   * when the cart contains multiple items.
-   *
-   * Related: TC-001 from test-spec.md
-   */
-  it('should calculate total correctly', () => {
-    // Test implementation
-  });
-});
-```
-
-### Step 10: Generate Complete Test Files
-
-For each test suite in test-plan.md, create complete file:
-
-1. **Imports**: Framework imports, source imports, mock imports
-2. **Mocks Setup**: Mock declarations
-3. **Test Suite**: describe() block
-4. **Setup/Teardown**: beforeEach(), afterEach()
-5. **Test Cases**: All it() blocks with assertions
-6. **Helpers**: Shared test utilities
-
-**File Organization**:
-```
-tests/
-├── unit/
-│   ├── calculator.test.ts        ✅ Generated
-│   ├── cart.test.ts              ✅ Generated
-│   └── payment.test.ts           ✅ Generated
-├── integration/
-│   └── checkout.test.ts          ✅ Generated
-└── fixtures/
-    ├── users.ts                  ✅ Generated
-    └── products.ts               ✅ Generated
-```
-
-### Step 11: Validate Generated Code
-
-Before writing files:
-
-1. **Syntax Check**: Ensure valid JavaScript/TypeScript/Python
-2. **Import Validation**: Check that all imports exist
-3. **Mock Completeness**: All external dependencies mocked
-4. **Assertion Quality**: Meaningful assertions, not just `toBeDefined()`
-5. **Edge Cases**: Boundary conditions covered
-
-### Step 12: Write Test Files
-
-1. **Create directories** if they don't exist
-2. **Write test files** with proper formatting
-3. **Create fixture files** if needed
-4. **Update test configuration** if necessary
-
-### Step 13: Report Generation Summary
-
-Display comprehensive summary:
+### Step 9: Output Summary
 
 ```
-✅ Test Files Generated
-========================
+Test Files Generated
+=====================
 
-Framework: Jest 29.7.0
-Test Directory: __tests__/
+Framework: {Vitest 3.2.4}
+Pattern: {__tests__/ subdirectories}
 
 Files Created:
-  ✓ calculator.test.ts (5 test cases, 45 lines)
-  ✓ cart.test.ts (8 test cases, 120 lines)
-  ✓ payment.test.ts (6 test cases, 85 lines)
-  ✓ fixtures/users.ts (test data)
+  - composables/__tests__/useCalc.test.ts (5 tests)
+  - utils/__tests__/validator.test.ts (3 tests)
+  - fixtures/users.ts
 
-Total Test Cases: 19
-Total Lines: 250
-Coverage Target: 80%
+Total: 8 test cases
 
-Mocks Implemented:
-  - Payment API (full mock)
-  - Database (repository mock)
-  - File system (stub)
+Mocks:
+  - External API (vi.mock)
+  - Database (mock repository)
 
-Next Steps:
-1. Run tests: npm test (or pytest)
-2. Check coverage: npm run test:coverage
-3. Review quality: /ut.review aa-2
+Next: Run tests with `npm test` or `pnpm test`
 ```
 
-### Step 14: Handle Edge Cases
-
-**Missing source files**:
-- Cannot generate tests without source code
-- Report: "Source file not found: {path}"
-- Skip that test suite, continue with others
-
-**Type information missing** (TypeScript):
-- Generate tests with `any` types
-- Add TODO comments to add proper types
-
-**Complex mocking scenarios**:
-- Generate basic mock structure
-- Add TODO comments for manual refinement
-
-**Framework not installed**:
-- Detect from package.json / requirements.txt
-- Warn: "Jest not installed. Run: npm install --save-dev jest"
-- Still generate tests (ready for installation)
+---
 
 ## Quality Checklist
 
-- [ ] All test cases from test-spec.md implemented
-- [ ] Mocks properly isolate external dependencies
-- [ ] Assertions are meaningful and specific
-- [ ] Edge cases and error scenarios covered
-- [ ] Test code follows framework conventions
-- [ ] Imports are correct and complete
-- [ ] Setup/teardown properly manages state
+- [ ] All TC-* from test-spec.md implemented
+- [ ] Mocks isolate external dependencies
+- [ ] Assertions are meaningful (not just `toBeDefined`)
+- [ ] Edge cases covered
+- [ ] Code follows framework conventions
+- [ ] Imports are correct
 - [ ] Generated code is syntactically valid
-- [ ] Documentation comments added
-- [ ] Fixtures created for reusable test data
 
-## Example Usage
-
-```bash
-# Generate test files for feature pref-2
-/ut.generate pref-2
-
-# Output:
-# Reading test plan... ✓
-# Detected framework: Jest 29.7.0
-# Analyzing source code... 3 files
-# Generating test files...
-#   - calculator.test.ts (5 tests)
-#   - cart.test.ts (8 tests)
-#   - payment.test.ts (6 tests)
-# Creating fixtures... ✓
-# Implementing mocks... ✓
-#
-# ✅ Generated 3 test files with 19 test cases
-# Total lines: 250
-#
-# Next: Run 'npm test' to execute tests
-```
+---
 
 ## Error Handling
 
-- **Missing test plan**: "Run `/ut.plan {feature-id}` first"
-- **Source file not found**: Skip test suite, report warning
-- **Invalid syntax in generated code**: Report error, provide diagnostic
-- **Write permission denied**: Report file path with issue
-- **Framework mismatch**: Warn if plan suggests different framework than detected
+| Error | Solution |
+|-------|----------|
+| test-plan.md missing | Run `/ut:plan {feature-id}` first |
+| Source file not found | Skip that suite, continue with others |
+| Framework not detected | Ask user to specify |
 
-## Notes
+---
 
-- This is a **prompt-based workflow** - AI agent generates test code
-- Generated tests are **syntactically correct** and **executable**
-- Mocks properly **isolate** units under test
-- Tests follow **framework best practices**
-- Code generation uses **actual source code** as reference
-- **Human review recommended** before committing (use `/ut.review`)
+## Supported Frameworks
+
+| Language | Frameworks |
+|----------|------------|
+| JavaScript/TypeScript | Vitest, Jest, Mocha, Jasmine |
+| Python | Pytest, unittest |
+| Ruby | RSpec, Minitest |
+| Java | JUnit, TestNG |
+| PHP | PHPUnit, Pest |
+| .NET | xUnit, NUnit, MSTest |
+| Go | testing, testify |
+
+---
+
+## Related
+
+- `ut:plan` - Create test plan (run first)
+- `ut:auto` - Automated workflow (plan + generate + run)

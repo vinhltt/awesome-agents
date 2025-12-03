@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-# plan.sh - Validate environment for /ut:plan command
+# auto.sh - Validate environment for /ut:auto command
 #
-# Usage: plan.sh <feature-id> [--review] [--force]
+# Usage: auto.sh <feature-id> [--skip-run] [--plan-only] [--force]
 #
 # This script validates environment and outputs paths.
-# Framework detection and test scanning handled by AI via prompt.
+# Workflow orchestration handled by AI via prompt.
 
 set -e
 
@@ -18,17 +18,22 @@ source "$SCRIPT_DIR/../common-env.sh" 2>/dev/null || {
 
 # Parse arguments
 FEATURE_ID=""
-REVIEW_MODE="false"
-FORCE_MODE="false"
+SKIP_RUN="false"
+PLAN_ONLY="false"
+FORCE="false"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --review)
-            REVIEW_MODE="true"
+        --skip-run)
+            SKIP_RUN="true"
+            shift
+            ;;
+        --plan-only)
+            PLAN_ONLY="true"
             shift
             ;;
         --force)
-            FORCE_MODE="true"
+            FORCE="true"
             shift
             ;;
         *)
@@ -42,7 +47,7 @@ done
 
 if [ -z "$FEATURE_ID" ]; then
     echo "ERROR: Feature ID required" >&2
-    echo "Usage: $0 <feature-id> [--review] [--force]" >&2
+    echo "Usage: $0 <feature-id> [--skip-run] [--plan-only] [--force]" >&2
     echo "Example: $0 pref-001" >&2
     exit 1
 fi
@@ -57,7 +62,7 @@ REPO_ROOT=$(get_repo_root)
 parsed=$(parse_feature_id "$FEATURE_ID") || exit 1
 IFS='|' read -r FOLDER TICKET FEATURE_DIR BRANCH_NAME <<< "$parsed"
 
-# Define output paths
+# Define paths
 SPEC_FILE="$FEATURE_DIR/spec.md"
 TEST_SPEC_FILE="$FEATURE_DIR/test-spec.md"
 COVERAGE_FILE="$FEATURE_DIR/coverage-analysis.md"
@@ -77,24 +82,26 @@ if [ ! -f "$SPEC_FILE" ]; then
     exit 1
 fi
 
-# Check existing files
-MODE="create"
-EXISTING_FILES=""
+# Check existing artifacts
+HAS_UT_RULES="false"
+HAS_TEST_SPEC="false"
+HAS_COVERAGE="false"
+HAS_PLAN="false"
+
+if [ -f "$UT_RULES_FILE" ]; then
+    HAS_UT_RULES="true"
+fi
 
 if [ -f "$TEST_SPEC_FILE" ]; then
-    EXISTING_FILES="$EXISTING_FILES test-spec.md"
-    MODE="exists"
+    HAS_TEST_SPEC="true"
+fi
+
+if [ -f "$COVERAGE_FILE" ]; then
+    HAS_COVERAGE="true"
 fi
 
 if [ -f "$PLAN_FILE" ]; then
-    EXISTING_FILES="$EXISTING_FILES test-plan.md"
-    MODE="exists"
-fi
-
-# Check if UT rules exist
-HAS_UT_RULES="false"
-if [ -f "$UT_RULES_FILE" ]; then
-    HAS_UT_RULES="true"
+    HAS_PLAN="true"
 fi
 
 # Output JSON for AI
@@ -109,9 +116,11 @@ cat <<EOF
   "PLAN_FILE": "$PLAN_FILE",
   "UT_RULES_FILE": "$UT_RULES_FILE",
   "HAS_UT_RULES": $HAS_UT_RULES,
-  "EXISTING_FILES": "$EXISTING_FILES",
-  "MODE": "$MODE",
-  "REVIEW_MODE": $REVIEW_MODE,
-  "FORCE_MODE": $FORCE_MODE
+  "HAS_TEST_SPEC": $HAS_TEST_SPEC,
+  "HAS_COVERAGE": $HAS_COVERAGE,
+  "HAS_PLAN": $HAS_PLAN,
+  "SKIP_RUN": $SKIP_RUN,
+  "PLAN_ONLY": $PLAN_ONLY,
+  "FORCE": $FORCE
 }
 EOF
